@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePPTStore } from '@/stores/pptStore';
+import { FabricCanvas } from './FabricCanvas';
 
 export const Workspace: React.FC = () => {
   const { currentSlideId, slides } = usePPTStore();
@@ -23,13 +24,9 @@ export const Workspace: React.FC = () => {
               style={{
                 width: `${currentSlide.data.pageSize.width / 2}px`,
                 height: `${currentSlide.data.pageSize.height / 2}px`,
-                backgroundColor: currentSlide.data.background
               }}
             >
-              {/* Fabric.js 画布将在这里渲染 */}
-              <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
-                画布区域（Fabric.js 将在此渲染）
-              </div>
+              <FabricCanvas />
             </div>
           </div>
         ) : (
