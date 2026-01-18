@@ -2,8 +2,9 @@ import { usePPTStore } from '@/stores/pptStore';
 import { SlideSidebar } from '@/components/SlideSidebar';
 import { Workspace } from '@/components/Workspace';
 import { CopilotPanel } from '@/components/CopilotPanel';
+import { ToastProvider } from '@/components/Toast';
 
-function App() {
+function AppContent() {
   const { isNewProject, slides, addSlide } = usePPTStore();
 
   // 欢迎页面
@@ -31,6 +32,14 @@ function App() {
       <Workspace />
       <CopilotPanel />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 
