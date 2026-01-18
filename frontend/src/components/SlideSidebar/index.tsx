@@ -1,9 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { usePPTStore } from '@/stores/pptStore';
 import { Plus, Trash2 } from 'lucide-react';
+import { ThumbnailGenerator } from '@/lib/thumbnailGenerator';
 
 export const SlideSidebar: React.FC = () => {
   const { slides, currentSlideId, addSlide, deleteSlide, switchSlide } = usePPTStore();
+  const [thumbnails, setThumbnails] = useState<Map<string, string>>(new Map());
+  const generatingRef = useRef<Set<string>>(new Set());
+
+  // 生成单个缩略图
+  const generateThumbnail = async (slideId: string, index: number) => {
+    if (generatingRef.current.has(slideId)) return;
+
+    generatingRef.current.add(slideId);
+
+    try {
+      const slide = slides.find(s => s.id === slideId);
+      if (!slide) return;
+
+      const dataUrl = await ThumbnailGenerator.generateThumbnail(slide.data);
+
+      setThumbnails(prev => new Map(prev).set(slideId, dataUrl));
+    } catch (error) {
+      console.error('Failed to generate thumbnail:', error);
+    } finally {
+      generatingRef.current.delete(slideId);
+    }
+  };
+
+  // 初始化和更新缩略图
+  useEffect(() => {
+    slides.forEach((slide, index) => {
+      if (!thumbnails.has(slide.id)) {
+        generateThumbnail(slide.id, index);
+      }
+    });
+  }, [slides]);
+
+  // 清理无效的缩略图
+  useEffect(() => {
+    const validIds = new Set(slides.map(s => s.id));
+    setThumbnails(prev => {
+      const cleaned = new Map<string, string>();
+      prev.forEach((value, key) => {
+        if (validIds.has(key)) {
+          cleaned.set(key, value);
+        }
+      });
+      return cleaned;
+    });
+  }, [slides]);
 
   return (
     <div className="w-64 bg-slate-100 border-r border-slate-200 flex flex-col">
@@ -39,11 +85,19 @@ export const SlideSidebar: React.FC = () => {
               }`}
               onClick={() => switchSlide(slide.id)}
             >
-              {/* 缩略图占位 */}
-              <div className="aspect-video bg-white border border-slate-200 rounded mb-1">
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-xs text-slate-400">{slide.displayIndex + 1}</span>
-                </div>
+              {/* 缩略图 */}
+              <div className="aspect-video bg-white border border-slate-200 rounded mb-1 overflow-hidden">
+                {thumbnails.get(slide.id) ? (
+                  <img
+                    src={thumbnails.get(slide.id)}
+                    alt={`Slide ${slide.displayIndex + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-xs text-slate-400">{slide.displayIndex + 1}</span>
+                  </div>
+                )}
               </div>
 
               {/* 页码和删除按钮 */}
