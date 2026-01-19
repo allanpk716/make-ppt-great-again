@@ -18,9 +18,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 当需要修复脚本时，优先在原有脚本基础上进行修改，除非必要，不要创建新的脚本文件。
 
+## 开发调试命令
+
+- **调试启动后端**: `npm run dev:backend`
+- **调试启动前端**: `npm run dev:frontend`
+
 ## 前后端测试
 
 对于前后端分离开发的项目，请使用浏览器（dev-browser 技能）进行测试，验证前后端的通信和交互操作。
+
+调试前端 web 页面时，必须使用 dev-browser 技能。
 
 ## 图片处理
 
