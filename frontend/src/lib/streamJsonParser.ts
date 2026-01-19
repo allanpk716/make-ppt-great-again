@@ -1,4 +1,4 @@
-import { StreamEvent, DisplayMessage } from '@/types/stream';
+import { DisplayMessage } from '@/types/stream';
 
 export class StreamJsonParser {
   /**

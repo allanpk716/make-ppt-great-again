@@ -85,6 +85,8 @@ export class SessionManager {
    * 设置 stdout 处理器（透传 stream-json）
    */
   private static setupStdoutHandler(session: CLISession): void {
+    if (!session.process.stdout) return;
+
     session.process.stdout.on('data', (chunk: Buffer) => {
       const lines = chunk.toString().split('\n');
 
@@ -112,9 +114,11 @@ export class SessionManager {
     });
 
     // 处理 stderr
-    session.process.stderr.on('data', (chunk: Buffer) => {
-      console.error(`CLI stderr [${session.slideId}]:`, chunk.toString());
-    });
+    if (session.process.stderr) {
+      session.process.stderr.on('data', (chunk: Buffer) => {
+        console.error(`CLI stderr [${session.slideId}]:`, chunk.toString());
+      });
+    }
   }
 
   /**
@@ -149,8 +153,10 @@ export class SessionManager {
       const session = await this.getOrCreateSession(projectId, slideId);
 
       // 发送消息到 CLI stdin
-      session.process.stdin.write(message + '\n');
-      this.updateActivity(slideId);
+      if (session.process.stdin) {
+        session.process.stdin.write(message + '\n');
+        this.updateActivity(slideId);
+      }
     } catch (error) {
       console.error(`Failed to send message to ${slideId}:`, error);
       throw error;
@@ -256,7 +262,7 @@ export class SessionManager {
   /**
    * 获取项目基础路径
    */
-  static get projectsBasePath(): string {
+  static getProjectsBasePath(): string {
     return this.projectsBasePath;
   }
 }

@@ -41,7 +41,7 @@ export class FabricConverter {
    */
   static textToFabric(element: TextElement): fabric.Text {
     return new fabric.Text(element.content, {
-      id: element.id,
+      ...(element.id ? { id: element.id } : {}),
       left: element.x,
       top: element.y,
       width: element.width,
@@ -53,7 +53,7 @@ export class FabricConverter {
       textAlign: element.textAlign,
       selectable: true,
       hasControls: true
-    });
+    } as any);
   }
 
   /**
@@ -61,7 +61,7 @@ export class FabricConverter {
    */
   static rectToFabric(element: RectElement): fabric.Rect {
     return new fabric.Rect({
-      id: element.id,
+      ...(element.id ? { id: element.id } : {}),
       left: element.x,
       top: element.y,
       width: element.width,
@@ -73,7 +73,7 @@ export class FabricConverter {
       ry: element.style.ry,
       selectable: true,
       hasControls: true
-    });
+    } as any);
   }
 
   /**
@@ -97,7 +97,7 @@ export class FabricConverter {
   /**
    * 将 Fabric.js 对象转换为元素
    */
-  static fabricToElement(obj: fabric.Object): PPTElement {
+  static fabricToElement(obj: any): PPTElement {
     const id = (obj as any).id || Math.random().toString(36).substring(2, 9);
 
     if (obj instanceof fabric.Text) {

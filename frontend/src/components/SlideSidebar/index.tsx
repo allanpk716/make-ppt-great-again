@@ -9,7 +9,7 @@ export const SlideSidebar: React.FC = () => {
   const generatingRef = useRef<Set<string>>(new Set());
 
   // 生成单个缩略图
-  const generateThumbnail = async (slideId: string, index: number) => {
+  const generateThumbnail = async (slideId: string) => {
     if (generatingRef.current.has(slideId)) return;
 
     generatingRef.current.add(slideId);
@@ -30,9 +30,9 @@ export const SlideSidebar: React.FC = () => {
 
   // 初始化和更新缩略图
   useEffect(() => {
-    slides.forEach((slide, index) => {
+    slides.forEach((slide) => {
       if (!thumbnails.has(slide.id)) {
-        generateThumbnail(slide.id, index);
+        generateThumbnail(slide.id);
       }
     });
   }, [slides]);

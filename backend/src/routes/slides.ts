@@ -10,7 +10,7 @@ router.get('/:projectId/slides/:slideId', async (req, res) => {
   try {
     const { projectId, slideId } = req.params;
     const slidePath = path.join(
-      SessionManager.projectsBasePath,
+      SessionManager.getProjectsBasePath(),
       projectId,
       'slides',
       slideId,
@@ -31,7 +31,7 @@ router.put('/:projectId/slides/:slideId', async (req, res) => {
     const pageData = req.body;
 
     const slidePath = path.join(
-      SessionManager.projectsBasePath,
+      SessionManager.getProjectsBasePath(),
       projectId,
       'slides',
       slideId,
@@ -52,7 +52,7 @@ router.post('/:projectId/slides', async (req, res) => {
     const slideId = req.body.slideId || Math.random().toString(36).substring(2, 9);
 
     const slidePath = path.join(
-      SessionManager.projectsBasePath,
+      SessionManager.getProjectsBasePath(),
       projectId,
       'slides',
       slideId

@@ -64,7 +64,7 @@ export const FabricCanvas: React.FC = () => {
     fabricCanvasRef.current = canvas;
 
     // 选中事件监听
-    canvas.on('selection:created', (e) => {
+    canvas.on('selection:created', (e: any) => {
       const selected = e.selected?.[0];
       if (selected) {
         const id = (selected as any).id;
@@ -72,7 +72,7 @@ export const FabricCanvas: React.FC = () => {
       }
     });
 
-    canvas.on('selection:updated', (e) => {
+    canvas.on('selection:updated', (e: any) => {
       const selected = e.selected?.[0];
       if (selected) {
         const id = (selected as any).id;

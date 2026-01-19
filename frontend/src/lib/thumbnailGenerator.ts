@@ -123,7 +123,7 @@ export class ThumbnailGenerator {
 
     // 克隆所有对象
     const objects = sourceCanvas.getObjects();
-    objects.forEach(obj => {
+    objects.forEach((obj: any) => {
       obj.clone((cloned: fabric.Object) => {
         cloned.scale(scale);
         cloned.set({
