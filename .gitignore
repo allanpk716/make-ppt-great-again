@@ -1,3 +1,8 @@
 node_modules
 .playwright-mcp/
 nul
+frontend/dist/
+
+.claude/hooks/
+*.json.backup*
+.claude/settings.json

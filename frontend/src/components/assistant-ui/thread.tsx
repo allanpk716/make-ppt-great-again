@@ -33,6 +33,9 @@ export const AssistantThread = () => {
                       Reasoning: Reasoning,
                       ReasoningGroup: ReasoningGroup,
                       Text: MarkdownText,
+                      tools: {
+                        Fallback: ToolDisplay,
+                      },
                     }}
                   />
                 </div>
