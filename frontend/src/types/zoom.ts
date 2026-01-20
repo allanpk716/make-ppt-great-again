@@ -5,7 +5,7 @@ export interface ZoomState {
 }
 
 export interface ZoomContextValue {
-  zoom: number;
+  level: number;
   isAutoFit: boolean;
   setZoom: (level: number) => void;
   zoomIn: () => void;
