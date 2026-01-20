@@ -128,13 +128,13 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetToFit = useCallback(() => {
     if (!containerRef.current) return;
     const fitLevel = calculateFitToPage(containerRef.current);
-    setState({
+    setState(prev => ({
       level: fitLevel,
       isAutoFit: true,
-      lastManualLevel: state.lastManualLevel,
-    });
+      lastManualLevel: prev.lastManualLevel,
+    }));
     saveZoomToStorage(fitLevel, true);
-  }, [calculateFitToPage, state.lastManualLevel]);
+  }, [calculateFitToPage]);
 
   // 注册容器引用
   const registerContainer = useCallback((container: HTMLElement | null) => {
