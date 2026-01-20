@@ -17,7 +17,8 @@ interface PPTStore {
   // 项目管理
   currentProjectPath: string | null;
   isDirty: boolean;
-  lastSavedAt: Date | null;
+  lastSavedAt: string | null;
+  isSaving: boolean;
 
   // 操作方法
   createNewProject: () => void;
@@ -50,6 +51,7 @@ export const usePPTStore = create<PPTStore>()(
       currentProjectPath: null,
       isDirty: false,
       lastSavedAt: null,
+      isSaving: false,
 
       // 创建新项目
       createNewProject: () => {
@@ -61,7 +63,8 @@ export const usePPTStore = create<PPTStore>()(
           isNewProject: true,
           currentProjectPath: null,
           isDirty: false,
-          lastSavedAt: null
+          lastSavedAt: null,
+          isSaving: false
         });
       },
 
@@ -74,7 +77,7 @@ export const usePPTStore = create<PPTStore>()(
           isNewProject: false,
           currentProjectPath: projectPath || null,
           isDirty: false,
-          lastSavedAt: new Date()
+          lastSavedAt: new Date().toISOString()
         });
       },
 
@@ -175,62 +178,102 @@ export const usePPTStore = create<PPTStore>()(
 
       // 保存项目
       saveProject: async () => {
-        const { slides, projectTitle, currentProjectPath } = get();
+        const { slides, projectTitle, currentProjectPath, isSaving } = get();
+
+        if (isSaving) {
+          console.warn('Save already in progress');
+          return;
+        }
+
         if (!currentProjectPath) {
           throw new Error('No project path set');
         }
 
-        const response = await fetch('/api/projects/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            path: currentProjectPath,
-            project: {
-              slides,
-              title: projectTitle
+        try {
+          set({ isSaving: true });
+
+          const response = await fetch('/api/projects/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              path: currentProjectPath,
+              title: projectTitle,
+              slides
+            })
+          });
+
+          if (!response.ok) {
+            let errorMessage = 'Failed to save project';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } catch {
+              errorMessage = `Failed to save project: ${response.statusText}`;
             }
-          })
-        });
+            throw new Error(errorMessage);
+          }
 
-        if (!response.ok) {
-          throw new Error('Failed to save project');
+          set({
+            isDirty: false,
+            isSaving: false,
+            lastSavedAt: new Date().toISOString()
+          });
+        } catch (error) {
+          set({ isSaving: false });
+          throw error;
         }
-
-        set({
-          isDirty: false,
-          lastSavedAt: new Date()
-        });
       },
 
       // 另存为项目
       saveAsProject: async (path) => {
-        const { slides, projectTitle } = get();
-
-        const response = await fetch('/api/projects/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            path,
-            project: {
-              slides,
-              title: projectTitle
-            }
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to save project');
+        if (!path || typeof path !== 'string' || path.trim() === '') {
+          throw new Error('Invalid project path');
         }
 
-        set({
-          currentProjectPath: path,
-          isDirty: false,
-          lastSavedAt: new Date()
-        });
+        if (get().isSaving) {
+          throw new Error('Save already in progress');
+        }
+
+        const { slides, projectTitle } = get();
+
+        try {
+          set({ isSaving: true });
+
+          const response = await fetch('/api/projects/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              path,
+              title: projectTitle,
+              slides
+            })
+          });
+
+          if (!response.ok) {
+            let errorMessage = 'Failed to save project';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } catch {
+              errorMessage = `Failed to save project: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+          }
+
+          set({
+            currentProjectPath: path,
+            isDirty: false,
+            isSaving: false,
+            lastSavedAt: new Date().toISOString()
+          });
+        } catch (error) {
+          set({ isSaving: false });
+          throw error;
+        }
       },
 
       // 标记为脏
