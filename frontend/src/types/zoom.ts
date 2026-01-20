@@ -12,4 +12,5 @@ export interface ZoomContextValue {
   zoomOut: () => void;
   resetToFit: () => void;
   calculateFitToPage: (container: HTMLElement) => number;
+  registerContainer: (container: HTMLElement | null) => void;
 }
