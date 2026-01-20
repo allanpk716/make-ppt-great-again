@@ -14,9 +14,14 @@ interface PPTStore {
   // UI 状态
   isNewProject: boolean;
 
+  // 项目管理
+  currentProjectPath: string | null;
+  isDirty: boolean;
+  lastSavedAt: Date | null;
+
   // 操作方法
   createNewProject: () => void;
-  loadProject: (project: { slides: Slide[]; title: string }) => void;
+  loadProject: (project: { slides: Slide[]; title: string }, projectPath?: string) => void;
   addSlide: () => void;
   deleteSlide: (id: string) => void;
   switchSlide: (id: string) => void;
@@ -25,6 +30,12 @@ interface PPTStore {
   selectElement: (id: string | null) => void;
   getSelectedElement: () => PPTElement | null;
   getCurrentAIContext: () => AIContext;
+
+  // 项目管理方法
+  saveProject: () => Promise<void>;
+  saveAsProject: (path: string) => Promise<void>;
+  markDirty: () => void;
+  markClean: () => void;
 }
 
 export const usePPTStore = create<PPTStore>()(
@@ -36,6 +47,9 @@ export const usePPTStore = create<PPTStore>()(
       projectTitle: '',
       selectedElementId: null,
       isNewProject: true,
+      currentProjectPath: null,
+      isDirty: false,
+      lastSavedAt: null,
 
       // 创建新项目
       createNewProject: () => {
@@ -44,17 +58,23 @@ export const usePPTStore = create<PPTStore>()(
           currentSlideId: null,
           projectTitle: '',
           selectedElementId: null,
-          isNewProject: true
+          isNewProject: true,
+          currentProjectPath: null,
+          isDirty: false,
+          lastSavedAt: null
         });
       },
 
       // 加载项目
-      loadProject: (project) => {
+      loadProject: (project, projectPath) => {
         set({
           slides: project.slides,
           currentSlideId: project.slides[0]?.id || null,
           projectTitle: project.title,
-          isNewProject: false
+          isNewProject: false,
+          currentProjectPath: projectPath || null,
+          isDirty: false,
+          lastSavedAt: new Date()
         });
       },
 
@@ -81,6 +101,7 @@ export const usePPTStore = create<PPTStore>()(
           slides: [...state.slides, newSlide],
           currentSlideId: newId
         }));
+        get().markDirty();
       },
 
       // 删除幻灯片
@@ -125,6 +146,7 @@ export const usePPTStore = create<PPTStore>()(
               : s
           )
         }));
+        get().markDirty();
       },
 
       // 选中元素
@@ -147,6 +169,76 @@ export const usePPTStore = create<PPTStore>()(
           type: selectedElementId ? 'element' : 'page',
           elementId: selectedElementId || undefined
         };
+      },
+
+      // 保存项目
+      saveProject: async () => {
+        const { slides, projectTitle, currentProjectPath } = get();
+        if (!currentProjectPath) {
+          throw new Error('No project path set');
+        }
+
+        const response = await fetch('/api/projects/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            path: currentProjectPath,
+            project: {
+              slides,
+              title: projectTitle
+            }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save project');
+        }
+
+        set({
+          isDirty: false,
+          lastSavedAt: new Date()
+        });
+      },
+
+      // 另存为项目
+      saveAsProject: async (path) => {
+        const { slides, projectTitle } = get();
+
+        const response = await fetch('/api/projects/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            path,
+            project: {
+              slides,
+              title: projectTitle
+            }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save project');
+        }
+
+        set({
+          currentProjectPath: path,
+          isDirty: false,
+          lastSavedAt: new Date()
+        });
+      },
+
+      // 标记为脏
+      markDirty: () => {
+        set({ isDirty: true });
+      },
+
+      // 标记为干净
+      markClean: () => {
+        set({ isDirty: false });
       }
     }),
     {
@@ -154,7 +246,8 @@ export const usePPTStore = create<PPTStore>()(
       partialize: (state) => ({
         slides: state.slides,
         currentSlideId: state.currentSlideId,
-        projectTitle: state.projectTitle
+        projectTitle: state.projectTitle,
+        currentProjectPath: state.currentProjectPath
       })
     }
   )
