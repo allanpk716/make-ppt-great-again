@@ -6,7 +6,11 @@ import { StreamJsonParser } from '@/lib/streamJsonParser';
 import { AssistantUIAdapter } from '@/components/AssistantUIAdapter';
 import { DisplayMessage } from '@/types/stream';
 
-export const CopilotPanel: React.FC = () => {
+interface CopilotPanelProps {
+  style?: React.CSSProperties;
+}
+
+export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
   const { getCurrentAIContext, currentSlideId } = usePPTStore();
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
@@ -38,7 +42,10 @@ export const CopilotPanel: React.FC = () => {
         }
       } else if (data.type === 'raw' && data.text) {
         const msg = StreamJsonParser.parseRaw(data.text);
-        setMessages(prev => [...prev, msg]);
+        // 只添加非 null 的消息（过滤掉 system 事件）
+        if (msg) {
+          setMessages(prev => [...prev, msg]);
+        }
       } else if (data.type === 'done') {
         setIsProcessing(false);
       } else if (data.type === 'error') {
@@ -94,7 +101,7 @@ export const CopilotPanel: React.FC = () => {
 
   if (!currentSlideId) {
     return (
-      <div className="w-80 bg-slate-50 border-l border-slate-200">
+      <div className="bg-slate-50 border-l border-slate-200" style={style}>
         <div className="h-full flex items-center justify-center text-slate-400">
           <div className="text-center">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -106,7 +113,7 @@ export const CopilotPanel: React.FC = () => {
   }
 
   return (
-    <div className="w-80 bg-slate-50 border-l border-slate-200 flex flex-col">
+    <div className="bg-slate-50 border-l border-slate-200 flex flex-col" style={style}>
       {/* 上下文指示器 */}
       <div className="p-4 border-b border-slate-200">
         <div className="text-sm font-medium text-slate-700">当前上下文</div>

@@ -1,7 +1,6 @@
 import { usePPTStore } from '@/stores/pptStore';
 import { SlideSidebar } from '@/components/SlideSidebar';
-import { Workspace } from '@/components/Workspace';
-import { CopilotPanel } from '@/components/CopilotPanel';
+import { ResizableLayout } from '@/components/ResizableLayout';
 import { ToastProvider } from '@/components/Toast';
 
 function AppContent() {
@@ -29,8 +28,7 @@ function AppContent() {
   return (
     <div className="h-screen flex bg-slate-50">
       <SlideSidebar />
-      <Workspace />
-      <CopilotPanel />
+      <ResizableLayout />
     </div>
   );
 }
