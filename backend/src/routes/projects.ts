@@ -3,15 +3,44 @@ import { projectService } from '../services/projectService.js';
 import fs from 'fs/promises';
 import path from 'path';
 
+interface SlideData {
+  version?: string;
+  pageSize?: { width: number; height: number };
+  background?: string;
+  elements?: unknown[];
+}
+
+interface SlideMeta {
+  summary?: string;
+  displayIndex?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface Slide {
+  id: string;
+  data: SlideData;
+  meta: SlideMeta;
+}
+
 const router = express.Router();
 
 // 创建新项目
 router.post('/create', async (req, res) => {
   try {
+    // Validate request body
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({ error: 'Request body is required' });
+    }
+
     const { name, location } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: 'Project name is required' });
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Project name is required and must be a string' });
+    }
+
+    if (location !== undefined && typeof location !== 'string') {
+      return res.status(400).json({ error: 'Location must be a string' });
     }
 
     const projectMeta = await projectService.createProject({ name, location });
@@ -57,11 +86,20 @@ router.get('/open', async (req, res) => {
       return res.status(400).json({ error: 'Project path is required' });
     }
 
-    const projectMeta = await projectService.openProject(projectPath);
+    // Decode and normalize
+    const decodedPath = decodeURIComponent(projectPath);
+    const normalizedPath = path.normalize(decodedPath);
+
+    // Check for null byte injection
+    if (normalizedPath.includes('\0')) {
+      return res.status(400).json({ error: 'Invalid project path' });
+    }
+
+    const projectMeta = await projectService.openProject(normalizedPath);
 
     // 读取幻灯片详细数据
-    const slidesDir = path.join(projectPath, 'slides');
-    const slides: Array<{ id: string; data: any; meta: any }> = [];
+    const slidesDir = path.join(normalizedPath, 'slides');
+    const slides: Slide[] = [];
 
     try {
       const entries = await fs.readdir(slidesDir, { withFileTypes: true });
@@ -139,10 +177,15 @@ router.get('/workspace', (req, res) => {
 // 更新工作空间路径
 router.put('/workspace', async (req, res) => {
   try {
+    // Validate request body
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({ error: 'Request body is required' });
+    }
+
     const { path: newPath } = req.body;
 
-    if (!newPath) {
-      return res.status(400).json({ error: 'Workspace path is required' });
+    if (!newPath || typeof newPath !== 'string') {
+      return res.status(400).json({ error: 'Workspace path is required and must be a string' });
     }
 
     await projectService.setWorkspacePath(newPath);
