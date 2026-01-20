@@ -27,3 +27,6 @@ export interface DisplayMessage {
   toolResult?: any;
   timestamp: Date;
 }
+
+// 导出 assistant-ui 兼容类型
+export type { AssistantMessage, AssistantMessagePart } from "@/lib/messageConverter";
