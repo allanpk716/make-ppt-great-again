@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useRef } from 'react';
 import { ZoomContextValue, ZoomState } from '@/types/zoom';
 import { usePPTStore } from '@/stores/pptStore';
 
@@ -43,7 +43,7 @@ const saveZoomToStorage = (level: number, isAutoFit: boolean): void => {
 };
 
 export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentSlide } = usePPTStore();
+  const { slides, currentSlideId } = usePPTStore();
   const [state, setState] = React.useState<ZoomState>({
     level: DEFAULT_ZOOM,
     isAutoFit: false,
@@ -66,6 +66,7 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 计算适应页面的缩放比例
   const calculateFitToPage = useCallback((container: HTMLElement): number => {
+    const currentSlide = slides.find(s => s.id === currentSlideId);
     if (!currentSlide) return DEFAULT_ZOOM;
 
     // PPT 实际尺寸（除以 2 后的显示尺寸）
@@ -85,16 +86,16 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 确保不小于最小缩放 0.25
     return Math.max(fitScale, MIN_ZOOM);
-  }, [currentSlide]);
+  }, [slides, currentSlideId]);
 
   // 设置缩放级别
   const setZoom = useCallback((level: number) => {
     const clampedLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, level));
-    setState(prev => ({
+    setState({
       level: clampedLevel,
       isAutoFit: false,
       lastManualLevel: clampedLevel,
-    }));
+    });
     saveZoomToStorage(clampedLevel, false);
   }, []);
 
