@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '@/stores/projectStore';
 import { usePPTStore } from '@/stores/pptStore';
 import { RecentProject } from '@/types/project';
+import { NewProjectDialog } from '@/components/NewProjectDialog';
+import { Box, Button, VStack, Text, Button as ChakraButton } from '@chakra-ui/react';
+import { FiPlus, FiFolderOpen } from 'react-icons/fi';
 
 export const WelcomeScreen: React.FC = () => {
   const { recentProjects, addRecentProject } = useProjectStore();
   const { createNewProject, loadProject } = usePPTStore();
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
   // 获取项目列表
   const fetchProjects = async () => {
@@ -33,7 +37,13 @@ export const WelcomeScreen: React.FC = () => {
 
   // 新建项目
   const handleNewProject = () => {
-    createNewProject();
+    setShowNewProjectDialog(true);
+  };
+
+  // 项目创建完成
+  const handleProjectCreated = (projectName: string) => {
+    console.log(`项目创建完成: ${projectName}`);
+    // 这里可以添加更多逻辑，如自动打开项目等
   };
 
   // 打开项目
@@ -75,23 +85,50 @@ export const WelcomeScreen: React.FC = () => {
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-center gap-4 mb-12">
-          <button
+        <VStack spacing={4} maxW="md" mx="auto">
+          <ChakraButton
             onClick={handleNewProject}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
+            size="lg"
+            colorScheme="blue"
+            leftIcon={<FiPlus />}
+            width="100%"
+            fontSize="lg"
+            py={6}
+            _hover={{
+              transform: 'translateY(-1px)',
+              boxShadow: 'lg'
+            }}
+            _active={{
+              transform: 'translateY(0)'
+            }}
           >
             新建项目
-          </button>
-          <button
+          </ChakraButton>
+          <ChakraButton
             onClick={() => {
               // TODO: 实现打开文件对话框
               console.log('打开项目');
             }}
-            className="px-8 py-3 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium shadow-md border border-slate-300"
+            size="lg"
+            variant="outline"
+            leftIcon={<FiFolderOpen />}
+            width="100%"
+            fontSize="lg"
+            py={6}
+            borderColor="gray.300"
+            _hover={{
+              bg: 'gray.50',
+              borderColor: 'blue.400',
+              transform: 'translateY(-1px)',
+              boxShadow: 'md'
+            }}
+            _active={{
+              transform: 'translateY(0)'
+            }}
           >
             打开项目
-          </button>
-        </div>
+          </ChakraButton>
+        </VStack>
 
         {/* 最近项目 */}
         {(recentProjects.length > 0 || projects.length > 0) && (
@@ -131,6 +168,13 @@ export const WelcomeScreen: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* 新建项目对话框 */}
+        <NewProjectDialog
+          isOpen={showNewProjectDialog}
+          onClose={() => setShowNewProjectDialog(false)}
+          onProjectCreated={handleProjectCreated}
+        />
       </div>
     </div>
   );
