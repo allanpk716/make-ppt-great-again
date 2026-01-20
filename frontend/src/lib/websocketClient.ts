@@ -34,8 +34,10 @@ export class WebSocketClient {
         };
 
         this.ws.onmessage = (event) => {
+          console.log('WebSocket raw message received:', event.data.substring(0, 200));
           try {
             const data: WSMessage = JSON.parse(event.data);
+            console.log('WebSocket parsed message:', data.type);
             this.messageHandlers.forEach(handler => handler(data));
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
@@ -70,11 +72,22 @@ export class WebSocketClient {
   }
 
   send(message: any): void {
+    console.log('WebSocketClient.send() called:', message);
+    console.log('WebSocket state:', this.ws?.readyState, 'OPEN:', WebSocket.OPEN);
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('Sending WebSocket message:', JSON.stringify(message));
       this.ws.send(JSON.stringify(message));
     } else {
-      console.error('WebSocket is not connected');
+      console.error('WebSocket is not connected, readyState:', this.ws?.readyState);
     }
+  }
+
+  register(projectId: string, slideId: string): void {
+    this.send({
+      type: 'register',
+      projectId,
+      slideId
+    });
   }
 
   onMessage(handler: MessageHandler): void {

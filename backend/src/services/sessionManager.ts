@@ -38,6 +38,7 @@ export class SessionManager {
     // 检查是否已存在
     const existing = this.sessions.get(slideId);
     if (existing && existing.process.exitCode === null) {
+      console.log(`Reusing existing session for ${slideId} with ${existing.clients.size} clients`);
       this.updateActivity(slideId);
       return existing;
     }
@@ -56,13 +57,17 @@ export class SessionManager {
     await fs.mkdir(projectPath, { recursive: true });
 
     // 启动 Claude Code CLI with stream-json
-    const cliProcess = spawn('claude', [
+    // 在 Windows 上直接使用 cmd 来调用 claude.cmd
+    const cliProcess = spawn('cmd', ['/c', 'claude', '-p',
       '--output-format', 'stream-json',
+      '--input-format', 'stream-json',
       '--dangerously-skip-permissions',
-      '--project', projectPath
+      '--include-partial-messages',
+      '--verbose'
     ], {
       cwd: projectPath,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: false
     });
 
     const session: CLISession = {
@@ -74,6 +79,7 @@ export class SessionManager {
     };
 
     this.sessions.set(slideId, session);
+    console.log(`Session added to map for ${slideId}, total sessions: ${this.sessions.size}`);
     this.updateActivity(slideId);
     this.setupStdoutHandler(session);
     this.setupProcessHandlers(session);
@@ -85,9 +91,15 @@ export class SessionManager {
    * 设置 stdout 处理器（透传 stream-json）
    */
   private static setupStdoutHandler(session: CLISession): void {
-    if (!session.process.stdout) return;
+    console.log(`Setting up stdout handler for ${session.slideId}, PID: ${session.process.pid}`);
+
+    if (!session.process.stdout) {
+      console.error(`No stdout for process ${session.slideId}`);
+      return;
+    }
 
     session.process.stdout.on('data', (chunk: Buffer) => {
+      console.log(`CLI stdout [${session.slideId}]:`, chunk.toString().substring(0, 200));
       const lines = chunk.toString().split('\n');
 
       for (const line of lines) {
@@ -147,15 +159,35 @@ export class SessionManager {
 
   /**
    * 发送消息到 CLI
+   * @param wsClient 可选的 WebSocket 客户端，用于在创建新会话时自动注册
    */
-  static async sendMessage(projectId: string, slideId: string, message: string): Promise<void> {
+  static async sendMessage(projectId: string, slideId: string, message: string, wsClient?: WebSocket): Promise<void> {
     try {
+      console.log(`SessionManager: sendMessage called - projectId: ${projectId}, slideId: ${slideId}, message: "${message}"`);
+      const isNewSession = !this.sessions.has(slideId);
       const session = await this.getOrCreateSession(projectId, slideId);
+      console.log(`SessionManager: Session created/retrieved, process exitCode: ${session.process.exitCode}`);
 
-      // 发送消息到 CLI stdin
+      // 如果是新创建的会话且提供了客户端，自动注册
+      if (isNewSession && wsClient) {
+        console.log(`Auto-registering client to new session ${slideId}`);
+        session.clients.add(wsClient);
+      }
+
+      // 发送消息到 CLI stdin (使用 stream-json 输入格式)
       if (session.process.stdin) {
-        session.process.stdin.write(message + '\n');
+        const messageJson = JSON.stringify({
+          type: 'user',
+          message: {
+            role: 'user',
+            content: message
+          }
+        });
+        console.log(`SessionManager: Writing to CLI stdin: ${messageJson}`);
+        session.process.stdin.write(messageJson + '\n');
         this.updateActivity(slideId);
+      } else {
+        console.error('SessionManager: Process stdin is not available');
       }
     } catch (error) {
       console.error(`Failed to send message to ${slideId}:`, error);
@@ -188,12 +220,19 @@ export class SessionManager {
    */
   private static broadcastToSession(slideId: string, message: any): void {
     const session = this.sessions.get(slideId);
-    if (!session) return;
+    if (!session) {
+      console.log(`No session found for ${slideId}, skipping broadcast`);
+      return;
+    }
 
+    console.log(`Broadcasting to ${slideId}, clients: ${session.clients.size}`);
     const data = JSON.stringify(message);
     session.clients.forEach((ws) => {
       if (ws.readyState === WebSocket.OPEN) {
+        console.log(`Sending to client, message type: ${message.type}`);
         ws.send(data);
+      } else {
+        console.log(`Client not ready, state: ${ws.readyState}`);
       }
     });
   }

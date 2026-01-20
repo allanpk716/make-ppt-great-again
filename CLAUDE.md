@@ -33,6 +33,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 使用 MCP 或 Agent 的截图识别能力时，在提交到识别服务之前，请确保图片尺寸小于 1000x1000 像素。
 
+截图的临时文件应放到项目根目录的 `tmp\screenshots` 目录中。
+
 ## 项目文档
 
 项目的计划文件应放置在 `docs\plans` 目录中。

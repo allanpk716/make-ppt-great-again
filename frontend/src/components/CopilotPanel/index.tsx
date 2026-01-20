@@ -28,9 +28,14 @@ export const CopilotPanel: React.FC = () => {
     });
 
     ws.onMessage((data) => {
+      console.log('CopilotPanel onMessage:', data.type, data);
       if (data.type === 'stream' && data.data) {
         const msg = StreamJsonParser.parse(data.data);
-        setMessages(prev => [...prev, msg]);
+        console.log('Parsed message:', msg);
+        // 只添加非 null 的消息（过滤掉 system 事件）
+        if (msg) {
+          setMessages(prev => [...prev, msg]);
+        }
       } else if (data.type === 'raw' && data.text) {
         const msg = StreamJsonParser.parseRaw(data.text);
         setMessages(prev => [...prev, msg]);
@@ -51,6 +56,14 @@ export const CopilotPanel: React.FC = () => {
       ws.disconnect();
     };
   }, []);
+
+  // 当 slideId 改变时注册客户端
+  useEffect(() => {
+    if (currentSlideId && wsRef.current && isConnected) {
+      console.log('Registering for slideId:', currentSlideId);
+      wsRef.current.register('default', currentSlideId);
+    }
+  }, [currentSlideId, isConnected]);
 
   const handleSend = () => {
     if (!input.trim() || !currentSlideId || !wsRef.current || isProcessing) return;
@@ -110,11 +123,6 @@ export const CopilotPanel: React.FC = () => {
           </div>
         ) : (
           <StreamMessageList messages={messages} />
-        )}
-        {isProcessing && (
-          <div className="text-sm text-slate-400 animate-pulse mt-4">
-            AI 正在处理...
-          </div>
         )}
       </div>
 

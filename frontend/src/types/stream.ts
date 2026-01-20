@@ -1,10 +1,12 @@
 // Stream-JSON 事件类型（根据 Claude Code CLI 输出格式）
 export type StreamEvent =
+  | { type: 'system'; subtype?: string }
   | { type: 'thinking'; content: string }
   | { type: 'tool_use'; name: string; input: any }
   | { type: 'tool_result'; name: string; output: any }
   | { type: 'text'; text: string }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: string; [key: string]: any }; // 兜底类型
 
 // WebSocket 消息类型
 export interface WSMessage {
