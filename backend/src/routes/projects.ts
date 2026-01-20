@@ -59,25 +59,49 @@ router.get('/open', async (req, res) => {
 
     const projectMeta = await projectService.openProject(projectPath);
 
-    // 读取幻灯片列表
+    // 读取幻灯片详细数据
     const slidesDir = path.join(projectPath, 'slides');
-    let slides: string[] = [];
+    const slides: Array<{ id: string; data: any; meta: any }> = [];
 
     try {
       const entries = await fs.readdir(slidesDir, { withFileTypes: true });
-      slides = entries
-        .filter(entry => entry.isDirectory())
-        .map(entry => entry.name)
-        .sort();
+
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const slidePath = path.join(slidesDir, entry.name);
+          const pageDataPath = path.join(slidePath, 'page.json');
+          const metaPath = path.join(slidePath, 'meta.json');
+
+          try {
+            const [pageData, slideMeta] = await Promise.all([
+              fs.readFile(pageDataPath, 'utf-8').then(JSON.parse),
+              fs.readFile(metaPath, 'utf-8').then(JSON.parse)
+            ]);
+
+            slides.push({
+              id: entry.name,
+              data: pageData,
+              meta: slideMeta
+            });
+          } catch (error) {
+            console.warn(`Failed to read slide ${entry.name}:`, error);
+          }
+        }
+      }
     } catch (error) {
-      console.warn('No slides directory or empty:', slidesDir);
+      console.warn('No slides directory or error reading slides:', error);
     }
+
+    // 按 slideOrder 排序
+    const orderedSlides = projectMeta.slideOrder
+      .map(id => slides.find(s => s.id === id))
+      .filter(Boolean);
 
     res.json({
       success: true,
       data: {
         meta: projectMeta,
-        slides
+        slides: orderedSlides
       }
     });
   } catch (error) {
