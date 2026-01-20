@@ -1,17 +1,23 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { usePPTStore } from '@/stores/pptStore';
 import { FabricCanvas } from './FabricCanvas';
 import { ZoomProvider } from '@/contexts/ZoomContext';
 import { ZoomControls } from './ZoomControls';
-import { useRef } from 'react';
 import { useZoom } from '@/contexts/ZoomContext';
 
 // 内部组件，使用 useZoom hook
 const WorkspaceContent: React.FC = () => {
   const { currentSlideId, slides } = usePPTStore();
   const currentSlide = slides.find(s => s.id === currentSlideId);
-  const { level } = useZoom();
+  const { level, registerContainer } = useZoom();
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+
+  // 注册容器引用，用于"适应页面"功能
+  useEffect(() => {
+    if (canvasContainerRef.current) {
+      registerContainer(canvasContainerRef.current);
+    }
+  }, [registerContainer]);
 
   return (
     <div className="flex-1 bg-slate-50 flex flex-col overflow-hidden">
