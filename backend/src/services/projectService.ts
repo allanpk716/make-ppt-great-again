@@ -238,6 +238,61 @@ class ProjectService {
       return [];
     }
   }
+
+  async updateProject(projectPath: string, updates: Partial<ProjectMeta>): Promise<ProjectMeta> {
+    // 验证路径不为空
+    if (!projectPath || projectPath.trim() === '') {
+      throw new Error('Project path cannot be empty');
+    }
+
+    const projectJsonPath = path.join(projectPath, 'project.json');
+
+    try {
+      // 显式检查文件是否存在
+      await fs.access(projectJsonPath);
+
+      // 读取现有内容
+      const content = await fs.readFile(projectJsonPath, 'utf-8');
+      let projectMeta: ProjectMeta;
+
+      try {
+        projectMeta = JSON.parse(content);
+      } catch (parseError) {
+        if (parseError instanceof SyntaxError) {
+          throw new Error(`Invalid JSON in project.json at ${projectPath}: ${parseError.message}`);
+        }
+        throw parseError;
+      }
+
+      // 更新字段
+      const updatedMeta: ProjectMeta = {
+        ...projectMeta,
+        ...updates,
+        // 确保 updatedAt 被更新
+        ...(updates.updatedAt ? {} : { updatedAt: new Date().toISOString() })
+      };
+
+      // 写入更新后的内容
+      await fs.writeFile(projectJsonPath, JSON.stringify(updatedMeta, null, 2));
+
+      console.log(`Project updated: ${projectPath}`);
+      return updatedMeta;
+    } catch (error) {
+      const errorCode = (error as NodeJS.ErrnoException).code;
+
+      if (errorCode === 'ENOENT') {
+        throw new Error(`Project not found at: ${projectPath}`);
+      }
+
+      if (errorCode === 'EACCES') {
+        throw new Error(`Permission denied updating project at: ${projectPath}`);
+      }
+
+      // 重新抛出其他错误
+      console.error(`Failed to update project: ${projectPath}`, error);
+      throw error;
+    }
+  }
 }
 
 export const projectService = new ProjectService();

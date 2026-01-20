@@ -201,4 +201,91 @@ router.put('/workspace', async (req, res) => {
   }
 });
 
+// 保存项目
+router.post('/save', async (req, res) => {
+  try {
+    // Validate request body
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({ error: 'Request body is required' });
+    }
+
+    const { path, title, slides } = req.body;
+
+    if (!path || typeof path !== 'string') {
+      return res.status(400).json({ error: 'Project path is required and must be a string' });
+    }
+
+    if (!title || typeof title !== 'string') {
+      return res.status(400).json({ error: 'Project title is required and must be a string' });
+    }
+
+    if (!Array.isArray(slides)) {
+      return res.status(400).json({ error: 'Slides must be an array' });
+    }
+
+    // 检查项目是否存在
+    const normalizedPath = path.normalize(path);
+    if (normalizedPath.includes('\0')) {
+      return res.status(400).json({ error: 'Invalid project path' });
+    }
+
+    try {
+      await fs.access(normalizedPath);
+    } catch {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // 更新项目元数据
+    await projectService.updateProject(normalizedPath, {
+      title,
+      updatedAt: new Date().toISOString()
+    });
+
+    // 保存所有幻灯片
+    const slideIds = [];
+    for (const slide of slides) {
+      const slidePath = path.join(normalizedPath, 'slides', slide.id);
+      const pageDataPath = path.join(slidePath, 'page.json');
+      const metaPath = path.join(slidePath, 'meta.json');
+
+      await fs.mkdir(slidePath, { recursive: true });
+
+      // 保存页面数据
+      await fs.writeFile(pageDataPath, JSON.stringify(slide.data, null, 2));
+
+      // 保存元数据
+      await fs.writeFile(metaPath, JSON.stringify({
+        ...slide.meta,
+        updatedAt: new Date().toISOString()
+      }, null, 2));
+
+      slideIds.push(slide.id);
+    }
+
+    // 更新项目中的幻灯片顺序
+    const updatedMeta = await projectService.updateProject(normalizedPath, {
+      slideOrder: slideIds,
+      updatedAt: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Project saved successfully',
+        meta: updatedMeta,
+        slideCount: slides.length
+      }
+    });
+  } catch (error) {
+    const message = (error as Error).message;
+    console.error('Failed to save project:', error);
+
+    if (message.includes('Permission denied')) {
+      return res.status(403).json({ error: message });
+    }
+
+    res.status(500).json({ error: message || 'Failed to save project' });
+  }
+});
+
 export default router;
