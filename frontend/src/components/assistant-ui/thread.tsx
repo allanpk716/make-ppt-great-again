@@ -4,6 +4,7 @@ import { ThreadPrimitive } from "@assistant-ui/react";
 import { MessagePrimitive } from "@assistant-ui/react";
 import { Reasoning, ReasoningGroup } from "./reasoning";
 import { MarkdownText } from "./markdown-text";
+import { ToolDisplay } from "./tool-display";
 
 export const AssistantThread = () => {
   return (
