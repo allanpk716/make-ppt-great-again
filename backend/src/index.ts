@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import projectRouter from './routes/project.js';
+import projectsRouter from './routes/projects.js';
 import slidesRouter from './routes/slides.js';
 import { SessionManager } from './services/sessionManager.js';
 import { setupWebSocket } from './middleware/wsHandler.js';
@@ -16,6 +17,7 @@ app.use(express.json());
 
 // 路由
 app.use('/api/project', projectRouter);
+app.use('/api/projects', projectsRouter);
 app.use('/api', slidesRouter);
 
 // WebSocket
