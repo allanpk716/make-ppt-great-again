@@ -10,8 +10,12 @@
 - **前端:** React 18.3 + TypeScript + Tailwind CSS
 - **UI 库:** assistant-ui (@assistant-ui/react)
 - **Markdown:** @assistant-ui/react-markdown + remark-gfm
-- **动画:** tw-shimmer
 - **通信:** 现有 WebSocket (ws://localhost:3001/ws)
+
+> **注意:** tw-shimmer 已被移除，因为它需要 Tailwind CSS v4，而项目当前使用 v3。
+> 后续可以通过以下方式之一实现 shimmer 效果：
+> 1. 手动实现 CSS 动画（已在 `index.css` 中添加自定义 shimmer 动画）
+> 2. 升级项目到 Tailwind CSS v4（需要更全面的测试和迁移）
 
 ---
 
@@ -28,8 +32,11 @@
 
 ```bash
 cd frontend
-npm install @assistant-ui/react tw-shimmer
+npm install @assistant-ui/react
 ```
+
+> **注意:** 已移除 `tw-shimmer` 依赖，因为它需要 Tailwind CSS v4，与项目当前的 v3 不兼容。
+> shimmer 效果已通过自定义 CSS 实现（见 Task 7）。
 
 预期输出:
 ```
@@ -58,7 +65,6 @@ cat package.json | grep assistant-ui
 预期输出应包含:
 - `@assistant-ui/react`
 - `@assistant-ui/react-markdown`
-- `tw-shimmer`
 - `remark-gfm`
 
 **Step 4: 提交依赖安装**
