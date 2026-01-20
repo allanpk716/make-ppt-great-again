@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useZoom } from '@/contexts/ZoomContext';
 import { Plus, Minus } from 'lucide-react';
 
@@ -8,6 +8,30 @@ interface ZoomControlsProps {
 
 export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) => {
   const { level, zoomIn, zoomOut, setZoom, resetToFit } = useZoom();  // 使用 level
+
+  // 键盘快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + Plus 或 Ctrl + = : 放大
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+        e.preventDefault();
+        if (!disabled) zoomIn();
+      }
+      // Ctrl + Minus 或 Ctrl + - : 缩小
+      else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault();
+        if (!disabled) zoomOut();
+      }
+      // Ctrl + 0 : 重置为适应页面
+      else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault();
+        if (!disabled) resetToFit();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [disabled, zoomIn, zoomOut, resetToFit]);
 
   const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
