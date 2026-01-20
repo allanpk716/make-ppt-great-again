@@ -149,6 +149,7 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     zoomOut,
     resetToFit,
     calculateFitToPage,
+    registerContainer,
   };
 
   return (
