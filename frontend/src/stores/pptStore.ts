@@ -115,6 +115,7 @@ export const usePPTStore = create<PPTStore>()(
               : state.currentSlideId
           };
         });
+        get().markDirty();
       },
 
       // 切换幻灯片
@@ -135,6 +136,7 @@ export const usePPTStore = create<PPTStore>()(
           }).filter(Boolean) as Slide[];
           return { slides: newSlides };
         });
+        get().markDirty();
       },
 
       // 更新幻灯片数据
