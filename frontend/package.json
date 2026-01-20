@@ -9,13 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.11.56",
+    "@assistant-ui/react-markdown": "^0.11.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fabric": "^5.3.0",
     "lucide-react": "^0.462.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.6.0",
+    "tw-shimmer": "^0.4.2",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
