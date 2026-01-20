@@ -5,6 +5,7 @@ import projectRouter from './routes/project.js';
 import slidesRouter from './routes/slides.js';
 import { SessionManager } from './services/sessionManager.js';
 import { setupWebSocket } from './middleware/wsHandler.js';
+import { projectService } from './services/projectService.js';
 
 const app = express();
 const server = createServer(app);
@@ -21,6 +22,10 @@ app.use('/api', slidesRouter);
 setupWebSocket(server);
 
 // 初始化
+projectService.initialize().then(() => {
+  console.log('ProjectService initialized');
+});
+
 SessionManager.initialize().then(() => {
   console.log('Session Manager initialized');
 });
