@@ -28,15 +28,19 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
       <button
         onClick={zoomOut}
         disabled={disabled || level <= 0.25}  // 使用 level
-        className="p-1 hover:bg-slate-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-1 hover:bg-slate-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="缩小"
-        title="缩小 (Ctrl+-)"
+        title="缩小"
       >
         <Minus className="w-4 h-4 text-slate-600" />
       </button>
 
       {/* 缩放比例选择器 */}
+      <label htmlFor="zoom-select" className="sr-only">
+        缩放比例
+      </label>
       <select
+        id="zoom-select"
         value={zoomPercentage}
         onChange={handleSelect}
         disabled={disabled}
@@ -56,9 +60,9 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
       <button
         onClick={zoomIn}
         disabled={disabled || level >= 4.0}  // 使用 level
-        className="p-1 hover:bg-slate-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-1 hover:bg-slate-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="放大"
-        title="放大 (Ctrl++)"
+        title="放大"
       >
         <Plus className="w-4 h-4 text-slate-600" />
       </button>
