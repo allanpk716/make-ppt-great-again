@@ -46,6 +46,9 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
 
   const zoomPercentage = Math.round(level * 100);  // 使用 level
 
+  // 预设的缩放选项
+  const presetOptions = [25, 50, 75, 100, 125, 150, 200];
+
   return (
     <div className="flex items-center gap-2">
       {/* 缩小按钮 */}
@@ -70,13 +73,13 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
         disabled={disabled}
         className="px-2 py-1 border border-slate-300 rounded text-sm min-w-[80px] disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <option value="25">25%</option>
-        <option value="50">50%</option>
-        <option value="75">75%</option>
-        <option value="100">100%</option>
-        <option value="125">125%</option>
-        <option value="150">150%</option>
-        <option value="200">200%</option>
+        {presetOptions.map((option) => (
+          <option key={option} value={option}>{option}%</option>
+        ))}
+        {/* 如果当前缩放级别不在预设值中，动态添加选项 */}
+        {!presetOptions.includes(zoomPercentage) && (
+          <option value={zoomPercentage}>{zoomPercentage}%</option>
+        )}
         <option value="fit">适应页面</option>
       </select>
 
