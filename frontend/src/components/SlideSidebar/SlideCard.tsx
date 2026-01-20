@@ -1,18 +1,8 @@
 import React from 'react';
 import {
   useSortable,
-  defaultDropAnimation,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  Card,
-  CardContent,
-  Flex,
-  Text,
-  useColorModeValue,
-  Center,
-} from '@chakra-ui/react';
-import { FiGripVertical, FiTrash2 } from 'react-icons/fi';
 import { usePPTStore } from '@/stores/pptStore';
 
 interface SlideCardProps {
@@ -37,7 +27,6 @@ export const SlideCard: React.FC<SlideCardProps> = ({
   onDelete,
   isSelected = false
 }) => {
-  const store = usePPTStore();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -48,11 +37,6 @@ export const SlideCard: React.FC<SlideCardProps> = ({
       setIsDeleting(false);
     }, 200);
   };
-
-  const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const hoverBg = useColorModeValue('gray.50', 'gray.700');
-  const selectedBg = isSelected ? 'blue.50' : bg;
 
   const {
     attributes,
@@ -67,55 +51,57 @@ export const SlideCard: React.FC<SlideCardProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: 'move',
   };
 
   return (
-    <Card
+    <div
       ref={setNodeRef}
       style={style}
-      bg={selectedBg}
-      borderColor={isSelected ? 'blue.400' : borderColor}
-      borderWidth={isSelected ? 2 : 1}
-      _hover={{ bg: hoverBg }}
-      transition="all 0.2s"
-      _active={{ shadow: 'md' }}
+      className={`
+        border rounded-lg p-3 transition-all duration-200 cursor-move
+        ${isSelected
+          ? 'bg-blue-50 border-blue-400 border-2'
+          : 'bg-white border-gray-200 hover:bg-gray-50'
+        }
+        ${isDragging ? 'shadow-md' : ''}
+      `}
     >
-      <CardContent p={3}>
-        <Flex alignItems="center" justifyContent="space-between">
-          <Flex alignItems="center" flex={1} mr={2}>
-            <div {...attributes} {...listeners} className="drag-handle">
-              <FiGripVertical
-                style={{ cursor: 'grab' }}
-                onMouseDown={(e) => e.stopPropagation()}
-              />
-            </div>
-            <Flex flex={1} ml={2}>
-              <Text
-                fontSize="sm"
-                fontWeight={isSelected ? '600' : '400'}
-                color={isSelected ? 'blue.600' : 'gray.700'}
-                cursor="pointer"
-                onClick={() => onClick?.(slide.id)}
-                _hover={{ color: 'blue.500' }}
-              >
-                {slide.meta.summary || `幻灯片 ${slide.displayIndex + 1}`}
-              </Text>
-            </Flex>
-          </Flex>
-          <Center>
-            <FiTrash2
-              color="red.500"
-              cursor="pointer"
-              onClick={handleDelete}
-              opacity={isDeleting ? 0.5 : 1}
-              transition="opacity 0.2s"
-              _hover={{ opacity: 1 }}
-              style={{ fontSize: '1.1rem' }}
-            />
-          </Center>
-        </Flex>
-      </CardContent>
-    </Card>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center flex-1 mr-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="drag-handle text-gray-400 hover:text-gray-600"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-2 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm8-14a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-2 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm2 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+            </svg>
+          </div>
+          <span
+            className={`ml-2 flex-1 text-sm cursor-pointer ${
+              isSelected
+                ? 'font-semibold text-blue-600'
+                : 'font-normal text-gray-700 hover:text-blue-500'
+            }`}
+            onClick={() => onClick?.(slide.id)}
+          >
+            {slide.meta.summary || `幻灯片 ${slide.displayIndex + 1}`}
+          </span>
+        </div>
+        <div className="flex items-center">
+          <button
+            onClick={handleDelete}
+            className="text-red-500 hover:text-red-700 transition-opacity cursor-pointer"
+            style={{ opacity: isDeleting ? 0.5 : 1 }}
+            aria-label="删除幻灯片"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

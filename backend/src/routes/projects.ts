@@ -45,9 +45,23 @@ router.post('/create', async (req, res) => {
 
     const projectMeta = await projectService.createProject({ name, location });
 
+    // 计算项目路径（与 createProject 中的逻辑一致）
+    const sanitizedName = name
+      .replace(/[<>:"|?*]/g, '')
+      .replace(/\.\./g, '')
+      .replace(/[\/\\]/g, '')
+      .trim();
+
+    const projectPath = location
+      ? path.join(location, sanitizedName)
+      : path.join(await projectService.getWorkspacePath(), sanitizedName);
+
     res.status(201).json({
       success: true,
-      data: projectMeta
+      data: {
+        ...projectMeta,
+        path: projectPath
+      }
     });
   } catch (error) {
     const message = (error as Error).message;
@@ -209,9 +223,9 @@ router.post('/save', async (req, res) => {
       return res.status(400).json({ error: 'Request body is required' });
     }
 
-    const { path, title, slides } = req.body;
+    const { path: projectPath, title, slides } = req.body;
 
-    if (!path || typeof path !== 'string') {
+    if (!projectPath || typeof projectPath !== 'string') {
       return res.status(400).json({ error: 'Project path is required and must be a string' });
     }
 
@@ -224,7 +238,7 @@ router.post('/save', async (req, res) => {
     }
 
     // 检查项目是否存在
-    const normalizedPath = path.normalize(path);
+    const normalizedPath = path.normalize(projectPath);
     if (normalizedPath.includes('\0')) {
       return res.status(400).json({ error: 'Invalid project path' });
     }

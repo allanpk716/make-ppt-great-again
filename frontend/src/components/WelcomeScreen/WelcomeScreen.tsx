@@ -3,8 +3,6 @@ import { useProjectStore } from '@/stores/projectStore';
 import { usePPTStore } from '@/stores/pptStore';
 import { RecentProject } from '@/types/project';
 import { NewProjectDialog } from '@/components/NewProjectDialog';
-import { Box, Button, VStack, Text, Button as ChakraButton } from '@chakra-ui/react';
-import { FiPlus, FiFolderOpen } from 'react-icons/fi';
 
 export const WelcomeScreen: React.FC = () => {
   const { recentProjects, addRecentProject } = useProjectStore();
@@ -41,27 +39,46 @@ export const WelcomeScreen: React.FC = () => {
   };
 
   // 项目创建完成
-  const handleProjectCreated = (projectName: string) => {
-    console.log(`项目创建完成: ${projectName}`);
-    // 这里可以添加更多逻辑，如自动打开项目等
+  const handleProjectCreated = async (name: string) => {
+    try {
+      const response = await fetch('/api/projects/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create project');
+      }
+
+      const data = await response.json();
+
+      // 加载新创建的项目
+      await handleOpenProject(data.data.path);
+    } catch (error) {
+      console.error('Error creating project:', error);
+    }
   };
 
   // 打开项目
   const handleOpenProject = async (path: string) => {
     try {
-      const response = await fetch(`/api/projects/open?path=${encodeURIComponent(path)}`);
+      const response = await fetch(`/api/projects/open?projectPath=${encodeURIComponent(path)}`);
       if (!response.ok) {
         throw new Error('Failed to open project');
       }
       const data = await response.json();
 
       // 加载项目数据到 store
-      loadProject(data.project, path);
+      loadProject(
+        { slides: data.data.slides, title: data.data.meta.title || '未命名项目' },
+        path
+      );
 
       // 添加到最近项目
       const recentProject: RecentProject = {
         path,
-        title: data.project.title || '未命名项目',
+        title: data.data.meta.title || '未命名项目',
         lastOpened: new Date().toISOString()
       };
       addRecentProject(recentProject);
@@ -85,50 +102,14 @@ export const WelcomeScreen: React.FC = () => {
         </div>
 
         {/* 操作按钮 */}
-        <VStack spacing={4} maxW="md" mx="auto">
-          <ChakraButton
+        <div className="flex flex-col gap-4 max-w-md mx-auto">
+          <button
             onClick={handleNewProject}
-            size="lg"
-            colorScheme="blue"
-            leftIcon={<FiPlus />}
-            width="100%"
-            fontSize="lg"
-            py={6}
-            _hover={{
-              transform: 'translateY(-1px)',
-              boxShadow: 'lg'
-            }}
-            _active={{
-              transform: 'translateY(0)'
-            }}
+            className="w-full px-6 py-3 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 transition-all active:translate-y-0 shadow-lg"
           >
             新建项目
-          </ChakraButton>
-          <ChakraButton
-            onClick={() => {
-              // TODO: 实现打开文件对话框
-              console.log('打开项目');
-            }}
-            size="lg"
-            variant="outline"
-            leftIcon={<FiFolderOpen />}
-            width="100%"
-            fontSize="lg"
-            py={6}
-            borderColor="gray.300"
-            _hover={{
-              bg: 'gray.50',
-              borderColor: 'blue.400',
-              transform: 'translateY(-1px)',
-              boxShadow: 'md'
-            }}
-            _active={{
-              transform: 'translateY(0)'
-            }}
-          >
-            打开项目
-          </ChakraButton>
-        </VStack>
+          </button>
+        </div>
 
         {/* 最近项目 */}
         {(recentProjects.length > 0 || projects.length > 0) && (
@@ -171,9 +152,9 @@ export const WelcomeScreen: React.FC = () => {
 
         {/* 新建项目对话框 */}
         <NewProjectDialog
-          isOpen={showNewProjectDialog}
+          open={showNewProjectDialog}
           onClose={() => setShowNewProjectDialog(false)}
-          onProjectCreated={handleProjectCreated}
+          onCreate={handleProjectCreated}
         />
       </div>
     </div>

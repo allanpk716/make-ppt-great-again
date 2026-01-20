@@ -6,3 +6,9 @@ frontend/dist/
 .claude/hooks/
 *.json.backup*
 .claude/settings.json
+
+# Project data
+backend/projects/
+
+# Test artifacts
+docs/test-results/
