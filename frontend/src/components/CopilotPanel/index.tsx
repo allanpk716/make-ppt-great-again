@@ -71,7 +71,7 @@ export const CopilotPanel: React.FC = () => {
     // 添加用户消息
     setMessages(prev => [...prev, {
       id: Math.random().toString(36).substring(7),
-      type: 'text',
+      type: 'user',
       content: input,
       timestamp: new Date()
     }]);
