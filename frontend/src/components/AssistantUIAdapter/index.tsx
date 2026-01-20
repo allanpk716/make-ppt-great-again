@@ -25,25 +25,98 @@ export const AssistantUIAdapter: React.FC<AssistantUIAdapterProps> = ({
 }) => {
   // 处理新消息
   const handleNew = async (message: AppendMessage) => {
-    if (message.content[0]?.type !== "text") {
-      throw new Error("Only text messages are supported");
-    }
+    const content = Array.isArray(message.content)
+      ? message.content.find(c => c.type === 'text')?.text || ''
+      : '';
 
-    const input = message.content[0].text;
-    if (onSendMessage) {
-      onSendMessage(input);
+    if (content && onSendMessage) {
+      onSendMessage(content);
     }
   };
 
-  // 转换消息格式
-  const convertMessage = (message: ThreadMessageLike): ThreadMessageLike => {
-    return message;
+  // 转换 DisplayMessage 到 ThreadMessageLike
+  const convertMessage = (msg: DisplayMessage): ThreadMessageLike => {
+    if (msg.type === 'user') {
+      return {
+        role: 'user',
+        content: [{ type: 'text', text: msg.content || '' }],
+        id: msg.id,
+        createdAt: msg.timestamp || new Date(),
+      };
+    }
+
+    // AI 消息 - 根据 type 转换
+    if (msg.type === 'text') {
+      return {
+        role: 'assistant',
+        content: [{ type: 'text', text: msg.content || '' }],
+        id: msg.id,
+        createdAt: msg.timestamp || new Date(),
+      };
+    }
+
+    // 思考过程
+    if (msg.type === 'thinking') {
+      return {
+        role: 'assistant',
+        content: [{
+          type: 'reasoning',
+          text: msg.content || ''
+        }],
+        id: msg.id,
+        createdAt: msg.timestamp || new Date(),
+      };
+    }
+
+    // 工具调用
+    if (msg.type === 'tool_call') {
+      return {
+        role: 'assistant',
+        content: [{
+          type: 'tool-call',
+          toolName: msg.toolName || '',
+          toolCallId: msg.id,
+          args: msg.toolInput || {}
+        }],
+        id: msg.id,
+        createdAt: msg.timestamp || new Date(),
+      };
+    }
+
+    // 工具结果 - 转换为文本显示（assistant-ui 不支持 tool-result 类型）
+    if (msg.type === 'tool_result') {
+      const resultText = `[${msg.toolName || 'Tool'} 结果]\n${JSON.stringify(msg.toolResult, null, 2)}`;
+      return {
+        role: 'assistant',
+        content: [{ type: 'text', text: resultText }],
+        id: msg.id,
+        createdAt: msg.timestamp || new Date(),
+      };
+    }
+
+    // 错误
+    if (msg.type === 'error') {
+      return {
+        role: 'assistant',
+        content: [{ type: 'text', text: `错误: ${msg.content}` }],
+        id: msg.id,
+        createdAt: msg.timestamp || new Date(),
+      };
+    }
+
+    // 默认返回空消息
+    return {
+      role: 'assistant',
+      content: [{ type: 'text', text: '' }],
+      id: msg.id,
+      createdAt: msg.timestamp || new Date(),
+    };
   };
 
   // 创建 ExternalStoreRuntime
   const runtime = useExternalStoreRuntime({
     isRunning: isProcessing,
-    messages: messages as unknown as ThreadMessageLike[],
+    messages: messages,
     convertMessage,
     onNew: handleNew,
   });

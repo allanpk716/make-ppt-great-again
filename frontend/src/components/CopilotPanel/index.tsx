@@ -65,14 +65,14 @@ export const CopilotPanel: React.FC = () => {
     }
   }, [currentSlideId, isConnected]);
 
-  const handleSend = () => {
-    if (!input.trim() || !currentSlideId || !wsRef.current || isProcessing) return;
+  const sendMessage = (content: string) => {
+    if (!content.trim() || !currentSlideId || !wsRef.current || isProcessing) return;
 
     // 添加用户消息
     setMessages(prev => [...prev, {
       id: Math.random().toString(36).substring(7),
       type: 'user',
-      content: input,
+      content: content,
       timestamp: new Date()
     }]);
 
@@ -81,11 +81,15 @@ export const CopilotPanel: React.FC = () => {
       type: 'chat',
       projectId: 'default',
       slideId: currentSlideId,
-      message: input
+      message: content
     });
 
-    setInput('');
     setIsProcessing(true);
+  };
+
+  const handleSend = () => {
+    sendMessage(input);
+    setInput('');
   };
 
   if (!currentSlideId) {
@@ -125,6 +129,7 @@ export const CopilotPanel: React.FC = () => {
           <AssistantUIAdapter
             messages={messages}
             isProcessing={isProcessing}
+            onSendMessage={sendMessage}
           />
         )}
       </div>
