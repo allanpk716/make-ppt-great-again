@@ -3,7 +3,7 @@ import { usePPTStore } from '@/stores/pptStore';
 import { MessageSquare, Send } from 'lucide-react';
 import { WebSocketClient } from '@/lib/websocketClient';
 import { StreamJsonParser } from '@/lib/streamJsonParser';
-import { StreamMessageList } from './StreamMessageList';
+import { AssistantUIAdapter } from '@/components/AssistantUIAdapter';
 import { DisplayMessage } from '@/types/stream';
 
 export const CopilotPanel: React.FC = () => {
@@ -122,7 +122,10 @@ export const CopilotPanel: React.FC = () => {
             与 AI 对话生成或修改幻灯片
           </div>
         ) : (
-          <StreamMessageList messages={messages} />
+          <AssistantUIAdapter
+            messages={messages}
+            isProcessing={isProcessing}
+          />
         )}
       </div>
 
