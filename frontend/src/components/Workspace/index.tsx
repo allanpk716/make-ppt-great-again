@@ -9,8 +9,10 @@ import { useZoom } from '@/contexts/ZoomContext';
 const WorkspaceContent: React.FC = () => {
   const { currentSlideId, slides } = usePPTStore();
   const currentSlide = slides.find(s => s.id === currentSlideId);
-  const { level, registerContainer } = useZoom();
+  const { level, registerContainer, calculateFitToPage, isAutoFit, setZoom } = useZoom();
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
 
   // 注册容器引用，用于"适应页面"功能
   useEffect(() => {
@@ -19,8 +21,41 @@ const WorkspaceContent: React.FC = () => {
     }
   }, [registerContainer]);
 
+  // 布局变化监听 - 自动适应模式下重新计算缩放
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !isAutoFit || !currentSlide) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const lastWidth = lastSizeRef.current.width;
+        const lastHeight = lastSizeRef.current.height;
+
+        // 只有尺寸变化较大时才重新计算（避免频繁触发）
+        if (Math.abs(width - lastWidth) > 50 || Math.abs(height - lastHeight) > 50 || (lastWidth === 0 && lastHeight === 0)) {
+          const fitLevel = calculateFitToPage(container);
+          setZoom(fitLevel);
+          lastSizeRef.current = { width, height };
+        }
+      }
+    });
+
+    observer.observe(container);
+
+    // 初始化尺寸
+    if (container.clientWidth > 0 && container.clientHeight > 0) {
+      lastSizeRef.current = {
+        width: container.clientWidth,
+        height: container.clientHeight,
+      };
+    }
+
+    return () => observer.disconnect();
+  }, [isAutoFit, currentSlide, calculateFitToPage, setZoom]);
+
   return (
-    <div className="flex-1 bg-slate-50 flex flex-col overflow-hidden">
+    <div ref={containerRef} className="flex-1 bg-slate-50 flex flex-col overflow-hidden">
       {/* 工具栏 */}
       <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-end px-4">
         <span className="text-sm text-slate-600 mr-auto">
