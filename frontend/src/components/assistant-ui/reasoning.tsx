@@ -2,7 +2,6 @@
 
 import {
   memo,
-  useState,
   type FC,
   type PropsWithChildren,
 } from "react";
@@ -18,14 +17,8 @@ import { cn } from "@/lib/utils";
 const ReasoningRoot: FC<
   PropsWithChildren<{ className?: string }>
 > = ({ className, children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
-    <details
-      open={isOpen}
-      onToggle={(e) => setIsOpen((e.target as HTMLDetailsElement).open)}
-      className={cn("mb-4 w-full", className)}
-    >
+    <details className={cn("mb-4 w-full", className)}>
       {children}
     </details>
   );

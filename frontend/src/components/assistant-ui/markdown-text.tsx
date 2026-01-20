@@ -7,7 +7,7 @@ import {
   useIsMarkdownCodeBlock,
 } from "@assistant-ui/react-markdown";
 import { Check, Copy } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const MarkdownTextImpl = () => {
@@ -25,15 +25,40 @@ export const MarkdownText = () => <MarkdownTextImpl />;
 // 复制功能 hook
 const useCopyToClipboard = ({ copiedDuration = 2000 } = {}) => {
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const timerRef = useRef<NodeJS.Timeout>();
 
   const copyToClipboard = (value: string) => {
     if (!value) return;
 
-    navigator.clipboard.writeText(value).then(() => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), copiedDuration);
-    });
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      console.warn('Clipboard API not available');
+      return;
+    }
+
+    navigator.clipboard.writeText(value)
+      .then(() => {
+        setIsCopied(true);
+        timerRef.current = setTimeout(() => {
+          setIsCopied(false);
+          timerRef.current = undefined;
+        }, copiedDuration);
+      })
+      .catch((err) => {
+        console.error('复制失败:', err);
+      });
   };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   return { isCopied, copyToClipboard };
 };
