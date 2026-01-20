@@ -4,6 +4,7 @@ import { ResizableLayout } from '@/components/ResizableLayout';
 import { ToastProvider } from '@/components/Toast';
 import { MenuBar } from '@/components/MenuBar';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 function AppContent() {
   const {
@@ -16,6 +17,16 @@ function AppContent() {
     saveProject,
     markDirty
   } = usePPTStore();
+
+  // 键盘快捷键处理
+  useKeyboardShortcuts({
+    'ctrl+n': handleNewProject,
+    'ctrl+o': handleOpenProject,
+    'ctrl+s': handleSaveProject,
+  }, {
+    enableMac: true,
+    preventDefault: true
+  });
 
   // 菜单栏处理函数
   const handleNewProject = () => {
