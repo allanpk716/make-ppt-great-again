@@ -7,7 +7,6 @@ export interface RecentProject {
 }
 
 export interface ProjectSettings {
-  workspacePath: string;
   autoBackupInterval: number; // 分钟
   theme: 'light' | 'dark';
 }

@@ -19,19 +19,18 @@ interface ProjectStore {
 
 export const useProjectStore = create<ProjectStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // 初始状态
       workspacePath: '',
       recentProjects: [],
       settings: {
-        workspacePath: '',
         autoBackupInterval: 5,
         theme: 'light'
       },
 
       // 设置 Workspace 路径
       setWorkspacePath: (path) => {
-        set({ workspacePath: path, settings: { ...get().settings, workspacePath: path } });
+        set({ workspacePath: path });
       },
 
       // 添加最近项目
