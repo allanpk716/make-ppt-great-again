@@ -26,32 +26,52 @@ const WorkspaceContent: React.FC = () => {
     const container = containerRef.current;
     if (!container || !isAutoFit || !currentSlide) return;
 
+    let rafId: number | null = null;
+
     const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
+      const entry = entries[0];
+      if (!entry) return;
+
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame(() => {
         const { width, height } = entry.contentRect;
         const lastWidth = lastSizeRef.current.width;
         const lastHeight = lastSizeRef.current.height;
 
         // 只有尺寸变化较大时才重新计算（避免频繁触发）
-        if (Math.abs(width - lastWidth) > 50 || Math.abs(height - lastHeight) > 50 || (lastWidth === 0 && lastHeight === 0)) {
+        const sizeChanged = Math.abs(width - lastWidth) > 50 ||
+                            Math.abs(height - lastHeight) > 50;
+        const isFirst = lastWidth === 0 && lastHeight === 0;
+
+        if (sizeChanged || isFirst) {
           const fitLevel = calculateFitToPage(container);
-          setZoom(fitLevel);
+          if (fitLevel > 0) {
+            setZoom(fitLevel);
+          }
           lastSizeRef.current = { width, height };
         }
-      }
+
+        rafId = null;
+      });
     });
 
     observer.observe(container);
 
-    // 初始化尺寸
-    if (container.clientWidth > 0 && container.clientHeight > 0) {
-      lastSizeRef.current = {
-        width: container.clientWidth,
-        height: container.clientHeight,
-      };
-    }
+    // 初始化尺寸（无论是否为 0）
+    lastSizeRef.current = {
+      width: container.clientWidth || 0,
+      height: container.clientHeight || 0,
+    };
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, [isAutoFit, currentSlide, calculateFitToPage, setZoom]);
 
   return (
