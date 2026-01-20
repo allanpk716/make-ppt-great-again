@@ -114,13 +114,26 @@ export class StreamJsonParser {
 
   /**
    * 解析原始文本行
+   * 首先尝试解析 JSON，如果是 system 消息则返回 null 过滤掉
    */
-  static parseRaw(text: string): DisplayMessage {
-    return {
-      id: Math.random().toString(36).substring(7),
-      type: 'text',
-      content: text,
-      timestamp: new Date()
-    };
+  static parseRaw(text: string): DisplayMessage | null {
+    // 尝试解析为 JSON
+    try {
+      const parsed = JSON.parse(text);
+      // 如果是 system 消息，返回 null 进行过滤
+      if (parsed.type === 'system') {
+        return null;
+      }
+      // 对于其他 JSON 类型，使用 parse 方法处理
+      return this.parse(parsed);
+    } catch {
+      // 不是有效的 JSON，作为纯文本返回
+      return {
+        id: Math.random().toString(36).substring(7),
+        type: 'text',
+        content: text,
+        timestamp: new Date()
+      };
+    }
   }
 }

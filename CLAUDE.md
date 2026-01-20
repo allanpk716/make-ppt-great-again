@@ -47,3 +47,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **远程仓库**: `git@github.com:allanpk716/make-ppt-great-again.git`
 - **已启用插件**: dev-browser（用于前后端交互测试）
+
+## UI 组件库
+
+项目使用 **assistant-ui** 组件库实现聊天界面。
+
+- **文档**: [assistant-ui GitHub](https://github.com/assistant-ui/assistant-ui)
+- **组件位置**: `frontend/src/components/assistant-ui/`
+- **集成文档**: `docs/assistant-ui-integration.md`
