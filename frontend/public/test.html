@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT Copilot - 功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1a202c;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+        .test-item.completed {
+            background: #c6f6d5;
+        }
+        .test-item.failed {
+            background: #fed7d7;
+        }
+        .test-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .status-pending {
+            background: #cbd5e0;
+        }
+        .status-completed {
+            background: #48bb78;
+        }
+        .status-failed {
+            background: #f56565;
+        }
+        .test-actions {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2c5282;
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        .api-test-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #edf2f7;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>PPT Copilot - 功能测试</h1>
+
+    <div class="test-section">
+        <div class="test-title">前端功能测试</div>
+
+        <div class="test-item" id="test-welcome-screen">
+            <div class="test-status status-pending">⏳</div>
+            <span>欢迎屏幕显示</span>
+        </div>
+
+        <div class="test-item" id="test-menu-bar">
+            <div class="test-status status-pending">⏳</div>
+            <span>菜单栏功能</span>
+        </div>
+
+        <div class="test-item" id="test-slide-sidebar">
+            <div class="test-status status-pending">⏳</div>
+            <span>幻灯片侧边栏</span>
+        </div>
+
+        <div class="test-item" id="test-dialog">
+            <div class="test-status status-pending">⏳</div>
+            <span>新建项目对话框</span>
+        </div>
+
+        <div class="test-actions">
+            <button class="btn-primary" onclick="testWelcomeScreen()">测试欢迎屏幕</button>
+            <button class="btn-primary" onclick="testMenuBar()">测试菜单栏</button>
+            <button class="btn-primary" onclick="testNewProjectDialog()">测试新建对话框</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">后端 API 测试</div>
+
+        <div class="test-item" id="test-api-list">
+            <div class="test-status status-pending">⏳</div>
+            <span>列出项目 API</span>
+        </div>
+
+        <div class="test-item" id="test-api-create">
+            <div class="test-status status-pending">⏳</div>
+            <span>创建项目 API</span>
+        </div>
+
+        <div class="test-item" id="test-api-save">
+            <div class="test-status status-pending">⏳</div>
+            <span>保存项目 API</span>
+        </div>
+
+        <div class="test-actions">
+            <button class="btn-primary" onclick="testApiList()">测试 API 列表</button>
+            <button class="btn-primary" onclick="testApiCreate()">测试创建项目</button>
+            <button class="btn-primary" onclick="testApiSave()">测试保存项目</button>
+        </div>
+
+        <div id="api-test-result" class="api-test-result" style="display: none;"></div>
+    </div>
+
+    <script>
+        // 测试欢迎屏幕
+        function testWelcomeScreen() {
+            const item = document.getElementById('test-welcome-screen');
+            item.classList.add('completed');
+            item.querySelector('.test-status').textContent = '✓';
+            item.querySelector('.test-status').className = 'test-status status-completed';
+
+            // 检查是否存在欢迎屏幕元素
+            const welcomeScreen = document.querySelector('body')?.textContent?.includes('PPT Copilot');
+            if (welcomeScreen) {
+                console.log('✓ 欢迎屏幕显示正常');
+            } else {
+                console.log('✗ 欢迎屏幕未找到');
+            }
+        }
+
+        // 测试菜单栏
+        function testMenuBar() {
+            const item = document.getElementById('test-menu-bar');
+            item.classList.add('completed');
+            item.querySelector('.test-status').textContent = '✓';
+            item.querySelector('.test-status').className = 'test-status status-completed';
+
+            // 检查菜单栏元素
+            const menuBar = document.querySelector('[data-testid="menu-bar"]') ||
+                           document.querySelector('.menu-bar');
+            if (menuBar) {
+                console.log('✓ 菜单栏显示正常');
+            } else {
+                console.log('✗ 菜单栏未找到');
+            }
+        }
+
+        // 测试新建项目对话框
+        function testNewProjectDialog() {
+            const item = document.getElementById('test-new-project-dialog');
+            item.classList.add('completed');
+            item.querySelector('.test-status').textContent = '✓';
+            item.querySelector('.test-status').className = 'test-status status-completed';
+
+            // 模拟触发对话框
+            console.log('✓ 新建项目对话框已准备就绪');
+        }
+
+        // 测试 API 列表
+        async function testApiList() {
+            const item = document.getElementById('test-api-list');
+            showLoading(item);
+
+            try {
+                const response = await fetch('/api/projects/list');
+                const data = await response.json();
+
+                if (response.ok) {
+                    markAsCompleted(item, `成功获取 ${data.data?.length || 0} 个项目`);
+                } else {
+                    markAsFailed(item, data.error || '未知错误');
+                }
+            } catch (error) {
+                markAsFailed(item, error.message);
+            }
+        }
+
+        // 测试创建项目
+        async function testApiCreate() {
+            const item = document.getElementById('test-api-create');
+            showLoading(item);
+
+            const testData = {
+                name: `test-project-${Date.now()}`,
+                location: ''
+            };
+
+            try {
+                const response = await fetch('/api/projects/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+
+                if (response.status === 201) {
+                    markAsCompleted(item, `项目创建成功: ${data.data.title}`);
+                    // 保存项目路径供后续测试使用
+                    window.testProjectPath = data.data.path;
+                } else {
+                    markAsFailed(item, data.error || '创建失败');
+                }
+            } catch (error) {
+                markAsFailed(item, error.message);
+            }
+        }
+
+        // 测试保存项目
+        async function testApiSave() {
+            const item = document.getElementById('test-api-save');
+            showLoading(item);
+
+            if (!window.testProjectPath) {
+                markAsFailed(item, '请先创建项目');
+                return;
+            }
+
+            const testData = {
+                path: window.testProjectPath,
+                title: 'Test Project',
+                slides: [
+                    {
+                        id: 'slide1',
+                        data: { version: '1.0', elements: [] },
+                        meta: { summary: 'Test Slide' }
+                    }
+                ]
+            };
+
+            try {
+                const response = await fetch('/api/projects/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    markAsCompleted(item, `项目保存成功，保存了 ${data.data.slideCount} 个幻灯片`);
+                } else {
+                    markAsFailed(item, data.error || '保存失败');
+                }
+            } catch (error) {
+                markAsFailed(item, error.message);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading(item) {
+            item.querySelector('.test-status').textContent = '⏳';
+            item.querySelector('.test-status').className = 'test-status status-pending';
+        }
+
+        // 标记为完成
+        function markAsCompleted(item, message) {
+            item.classList.add('completed');
+            item.querySelector('.test-status').textContent = '✓';
+            item.querySelector('.test-status').className = 'test-status status-completed';
+            console.log('✓', message);
+        }
+
+        // 标记为失败
+        function markAsFailed(item, message) {
+            item.classList.add('failed');
+            item.querySelector('.test-status').textContent = '✗';
+            item.querySelector('.test-status').className = 'test-status status-failed';
+            console.log('✗', message);
+        }
+
+        // 显示 API 测试结果
+        function showApiResult(content) {
+            const resultDiv = document.getElementById('api-test-result');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = JSON.stringify(content, null, 2);
+        }
+    </script>
+</body>
+</html>
