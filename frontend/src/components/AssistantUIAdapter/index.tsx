@@ -70,29 +70,32 @@ export const AssistantUIAdapter: React.FC<AssistantUIAdapterProps> = ({
       };
     }
 
-    // 工具调用
+    // 工具调用 - 使用 tool-call 类型
     if (msg.type === 'tool_call') {
       return {
         role: 'assistant',
-        content: [
-          {
-            type: 'tool-call',
-            toolName: msg.toolName || '',
-            toolCallId: msg.id,
-            args: msg.toolInput || {},
-          },
-        ],
+        content: [{
+          type: 'tool-call',
+          toolName: msg.toolName || '',
+          toolCallId: msg.id,
+          args: msg.toolInput || {},
+        }],
         id: msg.id,
         createdAt: msg.timestamp || new Date(),
       };
     }
 
-    // 工具结果 - 转换为文本显示（assistant-ui 不支持 tool-result 类型）
+    // 工具结果 - 使用 tool-call 类型并附加结果
     if (msg.type === 'tool_result') {
-      const resultText = `[${msg.toolName || 'Tool'} 结果]\n${JSON.stringify(msg.toolResult, null, 2)}`;
       return {
         role: 'assistant',
-        content: [{ type: 'text', text: resultText }],
+        content: [{
+          type: 'tool-call',
+          toolName: msg.toolName || '',
+          toolCallId: msg.id,
+          args: {},
+          result: msg.toolResult,
+        }],
         id: msg.id,
         createdAt: msg.timestamp || new Date(),
       };
