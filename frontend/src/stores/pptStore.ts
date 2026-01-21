@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { indexedDBStorage } from '@/lib/storage';
 import { Slide, PPTElement, PageData, AIContext } from '@/types/ppt';
 
 interface PPTStore {
@@ -288,6 +289,7 @@ export const usePPTStore = create<PPTStore>()(
     }),
     {
       name: 'ppt-storage',
+      storage: createJSONStorage(() => indexedDBStorage),
       partialize: (state) => ({
         slides: state.slides,
         currentSlideId: state.currentSlideId,
