@@ -62,20 +62,34 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
           // 累积 AI 消息片段
           const newPart = convertDisplayMessageToPart(msg);
 
-          // 特殊处理: text 类型追加到现有 text part
+          // 特殊处理: text 类型追加到现有 text part（使用不可变更新）
           if (msg.type === 'text') {
             const existingTextPart = accumulatingMsg.parts.find(p => p.type === 'text');
             if (existingTextPart && existingTextPart.content) {
-              existingTextPart.content += msg.content || '';
+              // 创建新数组和新对象，避免直接修改状态
+              setAccumulatingMsg({
+                ...accumulatingMsg,
+                parts: accumulatingMsg.parts.map(part =>
+                  part.type === 'text'
+                    ? { ...part, content: part.content + (msg.content || '') }
+                    : part
+                ),
+              });
             } else {
-              accumulatingMsg.parts.push(newPart);
+              // 添加新的 text part
+              setAccumulatingMsg({
+                ...accumulatingMsg,
+                parts: [...accumulatingMsg.parts, newPart],
+              });
             }
           } else {
             // thinking, tool_call, tool_result 作为新 part 添加
-            accumulatingMsg.parts.push(newPart);
+            setAccumulatingMsg({
+              ...accumulatingMsg,
+              parts: [...accumulatingMsg.parts, newPart],
+            });
           }
 
-          setAccumulatingMsg({ ...accumulatingMsg });
           console.log('Accumulated parts:', accumulatingMsg.parts.length);
         }
       }
