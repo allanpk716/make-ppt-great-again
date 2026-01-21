@@ -46,7 +46,7 @@ const ReasoningContent: FC<
 > = ({ className, children, 'aria-busy': ariaBusy }) => (
   <div
     className={cn(
-      'relative overflow-hidden text-muted-foreground text-sm pl-6 leading-relaxed',
+      'aui-reasoning-content relative overflow-hidden text-muted-foreground text-sm pl-6 leading-relaxed',
       className
     )}
     aria-busy={ariaBusy}
