@@ -1,2 +1,5 @@
 # 备份的旧组件
 src/components/.backup/
+
+# 测试覆盖率报告
+coverage/
