@@ -6,7 +6,7 @@ import { NewProjectDialog } from '@/components/NewProjectDialog';
 
 export const WelcomeScreen: React.FC = () => {
   const { recentProjects, addRecentProject } = useProjectStore();
-  const { createNewProject, loadProject } = usePPTStore();
+  const { loadProject } = usePPTStore();
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);

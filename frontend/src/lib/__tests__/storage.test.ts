@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { IndexedDBStorage } from '../storage';
 
 describe('IndexedDBStorage', () => {
@@ -13,7 +13,7 @@ describe('IndexedDBStorage', () => {
   afterEach(async () => {
     try {
       await storage.clear();
-    } catch (error) {
+    } catch (_error) {
       // 忽略清理错误
     }
   });

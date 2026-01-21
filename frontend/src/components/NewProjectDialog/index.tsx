@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { usePPTStore } from '@/stores/pptStore';
 
 interface NewProjectDialogProps {
   open: boolean;

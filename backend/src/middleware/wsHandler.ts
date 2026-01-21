@@ -15,7 +15,7 @@ export function setupWebSocket(server: Server) {
 
   wss.on('connection', (ws: WebSocket) => {
     let currentSlideId: string | null = null;
-    let currentProjectId: string | null = null;
+    let _currentProjectId: string | null = null;
 
     logger.info('New WebSocket connection');
 

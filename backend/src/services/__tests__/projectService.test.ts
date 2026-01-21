@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { ProjectService } from '../projectService.js';
-import fs from 'fs/promises';
 
 describe('ProjectService - Path Security', () => {
   let projectService: ProjectService;

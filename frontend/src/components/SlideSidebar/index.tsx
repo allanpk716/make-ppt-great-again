@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { usePPTStore } from '@/stores/pptStore';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ThumbnailGenerator } from '@/lib/thumbnailGenerator';
 import { SlideCard } from './SlideCard';
 

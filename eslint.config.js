@@ -18,6 +18,7 @@ export default [
       'backend/dist/**',
       'frontend/node_modules/**',
       'backend/node_modules/**',
+      'frontend/tailwind.config.js',
     ],
   },
 

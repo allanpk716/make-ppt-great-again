@@ -12,7 +12,6 @@ import type { RecentProject } from '@/types/project';
 
 function AppContent() {
   const {
-    isNewProject,
     slides,
     currentProjectPath,
     projectTitle,
@@ -20,7 +19,6 @@ function AppContent() {
     createNewProject,
     loadProject,
     saveProject,
-    markDirty,
   } = usePPTStore();
   const { addRecentProject } = useProjectStore();
   const [showOpenProjectDialog, setShowOpenProjectDialog] = useState(false);

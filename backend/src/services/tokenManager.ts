@@ -20,7 +20,7 @@ export class TokenManager {
     try {
       const decoded = jwt.verify(token, this.secret) as TokenPayload;
       return decoded;
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Invalid or expired token');
     }
   }
