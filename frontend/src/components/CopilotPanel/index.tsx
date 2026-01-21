@@ -5,6 +5,7 @@ import { WebSocketClient } from '@/lib/websocketClient';
 import { StreamJsonParser } from '@/lib/streamJsonParser';
 import { AssistantUIAdapter } from '@/components/AssistantUIAdapter';
 import { DisplayMessage } from '@/types/stream';
+import { AccumulatingMessage, isSameAssistantReply, AccumulatingPart } from '@/types/accumulation';
 
 interface CopilotPanelProps {
   style?: React.CSSProperties;
@@ -13,6 +14,7 @@ interface CopilotPanelProps {
 export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
   const { getCurrentAIContext, currentSlideId } = usePPTStore();
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [accumulatingMsg, setAccumulatingMsg] = useState<AccumulatingMessage | null>(null);
   const [input, setInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -35,22 +37,60 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
 
     ws.onMessage((data) => {
       console.log('CopilotPanel onMessage:', data.type, data);
+
       if (data.type === 'stream' && data.data) {
         const msg = StreamJsonParser.parse(data.data);
         console.log('Parsed message:', msg);
+
         // 只添加非 null 的消息（过滤掉 system 事件）
-        if (msg) {
+        if (!msg) return;
+
+        if (msg.type === 'user') {
+          // 添加用户消息
           setMessages((prev) => [...prev, msg]);
+
+          // 开始新的 AI 消息累积
+          setAccumulatingMsg({
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            parts: [],
+            status: { type: 'running' },
+            createdAt: new Date(),
+          });
         }
-      } else if (data.type === 'raw' && data.text) {
-        const msg = StreamJsonParser.parseRaw(data.text);
-        // 只添加非 null 的消息（过滤掉 system 事件）
-        if (msg) {
-          setMessages((prev) => [...prev, msg]);
+        else if (accumulatingMsg && isSameAssistantReply(msg, accumulatingMsg)) {
+          // 累积 AI 消息片段
+          const newPart = convertDisplayMessageToPart(msg);
+
+          // 特殊处理: text 类型追加到现有 text part
+          if (msg.type === 'text') {
+            const existingTextPart = accumulatingMsg.parts.find(p => p.type === 'text');
+            if (existingTextPart && existingTextPart.content) {
+              existingTextPart.content += msg.content || '';
+            } else {
+              accumulatingMsg.parts.push(newPart);
+            }
+          } else {
+            // thinking, tool_call, tool_result 作为新 part 添加
+            accumulatingMsg.parts.push(newPart);
+          }
+
+          setAccumulatingMsg({ ...accumulatingMsg });
+          console.log('Accumulated parts:', accumulatingMsg.parts.length);
         }
-      } else if (data.type === 'done') {
+      }
+      else if (data.type === 'done') {
+        // 完成累积：将 accumulatingMsg 转换为 DisplayMessage[] 并添加到列表
+        if (accumulatingMsg) {
+          const displayMsgs = convertAccumulatingToDisplayMessages(accumulatingMsg);
+          setMessages((prev) => [...prev, ...displayMsgs]);
+
+          console.log(`Added ${displayMsgs.length} messages from accumulation`);
+          setAccumulatingMsg(null);
+        }
         setIsProcessing(false);
-      } else if (data.type === 'error') {
+      }
+      else if (data.type === 'error') {
         setMessages((prev) => [
           ...prev,
           {
@@ -61,6 +101,7 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
           },
         ]);
         setIsProcessing(false);
+        setAccumulatingMsg(null);
       }
     });
 
@@ -106,6 +147,83 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
     sendMessage(input);
     setInput('');
   };
+
+  // 将 DisplayMessage 转换为 AccumulatingPart
+  function convertDisplayMessageToPart(msg: DisplayMessage): AccumulatingPart {
+    switch (msg.type) {
+      case 'thinking':
+        return {
+          type: 'reasoning',
+          content: msg.content || '',
+        };
+
+      case 'tool_call':
+        return {
+          type: 'tool-use',
+          toolName: msg.toolName || 'unknown',
+          input: msg.toolInput,
+          toolCallId: msg.id,
+        };
+
+      case 'tool_result':
+        return {
+          type: 'tool-result',
+          toolName: msg.toolName || 'unknown',
+          output: msg.toolResult,
+          toolCallId: msg.id,
+        };
+
+      case 'text':
+      default:
+        return {
+          type: 'text',
+          content: msg.content || '',
+        };
+    }
+  }
+
+  // 将 AccumulatingMessage 转换为 DisplayMessage[]
+  function convertAccumulatingToDisplayMessages(accMsg: AccumulatingMessage): DisplayMessage[] {
+    return accMsg.parts.map((part, index) => {
+      const baseMsg = {
+        id: `${accMsg.id}-${part.type}-${index}`,
+        timestamp: accMsg.createdAt,
+      };
+
+      switch (part.type) {
+        case 'reasoning':
+          return {
+            ...baseMsg,
+            type: 'thinking',
+            content: part.content || '',
+          };
+
+        case 'tool-use':
+          return {
+            ...baseMsg,
+            type: 'tool_call',
+            toolName: part.toolName,
+            toolInput: part.input,
+          };
+
+        case 'tool-result':
+          return {
+            ...baseMsg,
+            type: 'tool_result',
+            toolName: part.toolName,
+            toolResult: part.output,
+          };
+
+        case 'text':
+        default:
+          return {
+            ...baseMsg,
+            type: 'text',
+            content: part.content || '',
+          };
+      }
+    });
+  }
 
   if (!currentSlideId) {
     return (
