@@ -34,7 +34,7 @@ const ReasoningTrigger: FC<{ active: boolean; className?: string }> = ({ active,
         </span>
       )}
     </span>
-    <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]/rotate-180" />
+    <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
   </summary>
 );
 
@@ -62,8 +62,7 @@ const ReasoningGroupImpl: ReasoningGroupComponent = ({ children, startIndex, end
     if (message.status?.type !== 'running') return false;
     const lastIndex = message.parts.length - 1;
     if (lastIndex < 0) return false;
-    const lastType = message.parts[lastIndex]?.type;
-    if (lastType !== 'reasoning') return false;
+    // ReasoningGroup 组件只包含 reasoning 类型的 parts，无需额外类型检查
     return lastIndex >= startIndex && lastIndex <= endIndex;
   });
 
