@@ -12,3 +12,4 @@ backend/projects/
 
 # Test artifacts
 docs/test-results/
+.claude/cache/
