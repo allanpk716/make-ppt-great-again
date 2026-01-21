@@ -34,7 +34,7 @@ export function setupWebSocket(server: Server) {
         // 处理注册消息
         if (msg.type === 'register' && msg.slideId && msg.projectId) {
           currentSlideId = msg.slideId;
-          currentProjectId = msg.projectId;
+          _currentProjectId = msg.projectId;
           logger.info(`Registering client for slide: ${msg.slideId}`);
           SessionManager.registerClient(msg.slideId, ws);
 
@@ -50,7 +50,7 @@ export function setupWebSocket(server: Server) {
 
         if (msg.type === 'chat' && msg.slideId) {
           currentSlideId = msg.slideId;
-          currentProjectId = msg.projectId;
+          _currentProjectId = msg.projectId;
           logger.info(`Processing chat message for slide: ${msg.slideId}`);
 
           // 发送消息到 CLI，并传递 ws 客户端以自动注册
