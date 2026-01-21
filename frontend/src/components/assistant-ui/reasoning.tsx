@@ -18,15 +18,23 @@ const ReasoningTrigger: FC<{ active: boolean; className?: string }> = ({ active,
   <summary
     className={cn(
       'group/trigger -mb-2 flex cursor-pointer items-center gap-2 py-2 text-muted-foreground text-sm transition-colors hover:text-foreground',
+      'select-none',
       className
     )}
   >
     <Brain className="h-4 w-4 shrink-0" />
     <span className="relative inline-block leading-none">
       <span>思考过程</span>
-      {active && <span className="absolute inset-0 animate-pulse">思考过程</span>}
+      {active && (
+        <span
+          className="absolute inset-0 animate-pulse opacity-70"
+          aria-hidden
+        >
+          思考过程
+        </span>
+      )}
     </span>
-    <ChevronDown className="h-4 w-4 shrink-0 transition-transform" />
+    <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]/rotate-180" />
   </summary>
 );
 
