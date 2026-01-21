@@ -4,6 +4,7 @@ import cors from 'cors';
 import projectRouter from './routes/project.js';
 import projectsRouter from './routes/projects.js';
 import slidesRouter from './routes/slides.js';
+import authRouter from './routes/auth.js';
 import { SessionManager } from './services/sessionManager.js';
 import { setupWebSocket } from './middleware/wsHandler.js';
 import { projectService } from './services/projectService.js';
@@ -17,8 +18,7 @@ app.use(cors());
 app.use(express.json());
 
 // 公开路由 (无需认证)
-// TODO: Task 1.2 - 添加 auth 路由
-// app.use('/api/auth', authRouter);
+app.use('/api/auth', authRouter);
 
 // 受保护路由 (需要认证)
 app.use('/api/project', authenticateToken, projectRouter);
