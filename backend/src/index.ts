@@ -10,6 +10,7 @@ import { setupWebSocket } from './middleware/wsHandler.js';
 import { projectService } from './services/projectService.js';
 import { authenticateToken } from './middleware/auth.js';
 import { logger } from './lib/logger.js';
+import { apiLimiter, authLimiter } from './middleware/rateLimit.js';
 
 const app = express();
 const server = createServer(app);
@@ -23,7 +24,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// 应用全局限流 (所有 API 路由)
+app.use('/api/', apiLimiter);
+
 // 公开路由 (无需认证)
+// 认证端点使用更严格的限流
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRouter);
 
 // 受保护路由 (需要认证)
