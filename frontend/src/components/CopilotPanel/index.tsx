@@ -121,26 +121,16 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
   const sendMessage = (content: string) => {
     if (!content.trim() || !currentSlideId || !wsRef.current || isProcessing) return;
 
-    // 添加用户消息
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(36).substring(7),
-        type: 'user',
-        content: content,
-        timestamp: new Date(),
-      },
-    ]);
+    // 设置处理状态
+    setIsProcessing(true);
 
-    // 发送到后端
+    // 发送到后端（用户消息将由 ws.onMessage 统一处理）
     wsRef.current.send({
       type: 'chat',
       projectId: 'default',
       slideId: currentSlideId,
       message: content,
     });
-
-    setIsProcessing(true);
   };
 
   const handleSend = () => {
