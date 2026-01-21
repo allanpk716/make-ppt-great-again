@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../lib/logger.js';
 import type {
   ProjectMeta,
   CreateProjectOptions,
@@ -29,10 +30,10 @@ class ProjectService {
         await fs.writeFile(this.recentProjectsPath, JSON.stringify([], null, 2));
       }
 
-      console.log('ProjectService initialized');
-      console.log(`Workspace path: ${this.workspacePath}`);
+      logger.info('ProjectService initialized');
+      logger.info(`Workspace path: ${this.workspacePath}`);
     } catch (error) {
-      console.error('Failed to initialize ProjectService:', error);
+      logger.error('Failed to initialize ProjectService', { error });
       throw error;
     }
   }
@@ -68,12 +69,12 @@ class ProjectService {
       this.workspacePath = fullPath;
       this.recentProjectsPath = newRecentProjectsPath;
 
-      console.log(`Workspace path updated to: ${fullPath}`);
+      logger.info(`Workspace path updated to: ${fullPath}`);
     } catch (error) {
       // 失败时回滚到旧路径
       this.workspacePath = oldWorkspacePath;
       this.recentProjectsPath = oldRecentProjectsPath;
-      console.error('Failed to set workspace path, rolled back to previous path:', error);
+      logger.error('Failed to set workspace path, rolled back to previous path', { error });
       throw error;
     }
   }
@@ -174,7 +175,7 @@ class ProjectService {
       JSON.stringify(projectMeta, null, 2),
     );
 
-    console.log(`Project created: ${projectPath}`);
+    logger.info(`Project created: ${projectPath}`);
     return projectMeta;
   }
 
@@ -213,7 +214,7 @@ class ProjectService {
         throw new Error(`Project missing required field 'title' at ${projectPath}`);
       }
 
-      console.log(`Project opened: ${projectPath}`);
+      logger.info(`Project opened: ${projectPath}`);
       return projectMeta;
     } catch (error) {
       const errorCode = (error as NodeJS.ErrnoException).code;
@@ -227,7 +228,7 @@ class ProjectService {
       }
 
       // 重新抛出其他错误（包括我们上面自定义的错误消息）
-      console.error(`Failed to open project: ${projectPath}`, error);
+      logger.error(`Failed to open project: ${projectPath}`, { error });
       throw error;
     }
   }
@@ -255,14 +256,14 @@ class ProjectService {
             });
           } catch (error) {
             // 记录警告而不是静默忽略
-            console.warn(`Skipping invalid project directory: ${projectPath}`, error);
+            logger.warn(`Skipping invalid project directory: ${projectPath}`, { error });
           }
         }
       }
 
       return projects;
     } catch (error) {
-      console.error('Failed to list projects:', error);
+      logger.error('Failed to list projects', { error });
       return [];
     }
   }
@@ -303,7 +304,7 @@ class ProjectService {
       // 写入更新后的内容
       await fs.writeFile(projectJsonPath, JSON.stringify(updatedMeta, null, 2));
 
-      console.log(`Project updated: ${projectPath}`);
+      logger.info(`Project updated: ${projectPath}`);
       return updatedMeta;
     } catch (error) {
       const errorCode = (error as NodeJS.ErrnoException).code;
@@ -317,7 +318,7 @@ class ProjectService {
       }
 
       // 重新抛出其他错误
-      console.error(`Failed to update project: ${projectPath}`, error);
+      logger.error(`Failed to update project: ${projectPath}`, { error });
       throw error;
     }
   }

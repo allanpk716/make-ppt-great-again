@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import { WebSocket } from 'ws';
+import { logger } from '../lib/logger.js';
 
 interface CLISession {
   slideId: string;
@@ -26,7 +27,7 @@ export class SessionManager {
       await fs.mkdir(this.projectsBasePath, { recursive: true });
       this.startCleanupTimer();
     } catch (error) {
-      console.error('Failed to initialize projects directory:', error);
+      logger.error('Failed to initialize projects directory', { error });
       throw error;
     }
   }
@@ -38,7 +39,7 @@ export class SessionManager {
     // 检查是否已存在
     const existing = this.sessions.get(slideId);
     if (existing && existing.process.exitCode === null) {
-      console.log(`Reusing existing session for ${slideId} with ${existing.clients.size} clients`);
+      logger.info(`Reusing existing session for ${slideId} with ${existing.clients.size} clients`);
       this.updateActivity(slideId);
       return existing;
     }
@@ -79,7 +80,7 @@ export class SessionManager {
     };
 
     this.sessions.set(slideId, session);
-    console.log(`Session added to map for ${slideId}, total sessions: ${this.sessions.size}`);
+    logger.info(`Session added to map for ${slideId}, total sessions: ${this.sessions.size}`);
     this.updateActivity(slideId);
     this.setupStdoutHandler(session);
     this.setupProcessHandlers(session);
@@ -91,15 +92,15 @@ export class SessionManager {
    * 设置 stdout 处理器（透传 stream-json）
    */
   private static setupStdoutHandler(session: CLISession): void {
-    console.log(`Setting up stdout handler for ${session.slideId}, PID: ${session.process.pid}`);
+    logger.info(`Setting up stdout handler for ${session.slideId}, PID: ${session.process.pid}`);
 
     if (!session.process.stdout) {
-      console.error(`No stdout for process ${session.slideId}`);
+      logger.error(`No stdout for process ${session.slideId}`);
       return;
     }
 
     session.process.stdout.on('data', (chunk: Buffer) => {
-      console.log(`CLI stdout [${session.slideId}]:`, chunk.toString().substring(0, 200));
+      logger.debug(`CLI stdout [${session.slideId}]:`, chunk.toString().substring(0, 200));
       const lines = chunk.toString().split('\n');
 
       for (const line of lines) {
@@ -128,7 +129,7 @@ export class SessionManager {
     // 处理 stderr
     if (session.process.stderr) {
       session.process.stderr.on('data', (chunk: Buffer) => {
-        console.error(`CLI stderr [${session.slideId}]:`, chunk.toString());
+        logger.error(`CLI stderr [${session.slideId}]:`, chunk.toString());
       });
     }
   }
@@ -138,7 +139,7 @@ export class SessionManager {
    */
   private static setupProcessHandlers(session: CLISession): void {
     session.process.on('exit', (code) => {
-      console.log(`CLI session ${session.slideId} exited with code ${code}`);
+      logger.info(`CLI session ${session.slideId} exited with code ${code}`);
       this.broadcastToSession(session.slideId, {
         type: 'done',
         slideId: session.slideId
@@ -148,7 +149,7 @@ export class SessionManager {
     });
 
     session.process.on('error', (error) => {
-      console.error(`CLI session ${session.slideId} error:`, error);
+      logger.error(`CLI session ${session.slideId} error`, { error });
       this.broadcastToSession(session.slideId, {
         type: 'error',
         slideId: session.slideId,
@@ -163,14 +164,14 @@ export class SessionManager {
    */
   static async sendMessage(projectId: string, slideId: string, message: string, wsClient?: WebSocket): Promise<void> {
     try {
-      console.log(`SessionManager: sendMessage called - projectId: ${projectId}, slideId: ${slideId}, message: "${message}"`);
+      logger.info(`SessionManager: sendMessage called - projectId: ${projectId}, slideId: ${slideId}, message: "${message}"`);
       const isNewSession = !this.sessions.has(slideId);
       const session = await this.getOrCreateSession(projectId, slideId);
-      console.log(`SessionManager: Session created/retrieved, process exitCode: ${session.process.exitCode}`);
+      logger.info(`SessionManager: Session created/retrieved, process exitCode: ${session.process.exitCode}`);
 
-      // 如果是新创建的会话且提供了客户端，自动注册
+      // 如果是新创建的会话且提供了客户端,自动注册
       if (isNewSession && wsClient) {
-        console.log(`Auto-registering client to new session ${slideId}`);
+        logger.info(`Auto-registering client to new session ${slideId}`);
         session.clients.add(wsClient);
       }
 
@@ -183,14 +184,14 @@ export class SessionManager {
             content: message
           }
         });
-        console.log(`SessionManager: Writing to CLI stdin: ${messageJson}`);
+        logger.debug(`SessionManager: Writing to CLI stdin: ${messageJson}`);
         session.process.stdin.write(messageJson + '\n');
         this.updateActivity(slideId);
       } else {
-        console.error('SessionManager: Process stdin is not available');
+        logger.error('SessionManager: Process stdin is not available');
       }
     } catch (error) {
-      console.error(`Failed to send message to ${slideId}:`, error);
+      logger.error(`Failed to send message to ${slideId}`, { error });
       throw error;
     }
   }
@@ -221,18 +222,18 @@ export class SessionManager {
   private static broadcastToSession(slideId: string, message: any): void {
     const session = this.sessions.get(slideId);
     if (!session) {
-      console.log(`No session found for ${slideId}, skipping broadcast`);
+      logger.debug(`No session found for ${slideId}, skipping broadcast`);
       return;
     }
 
-    console.log(`Broadcasting to ${slideId}, clients: ${session.clients.size}`);
+    logger.debug(`Broadcasting to ${slideId}, clients: ${session.clients.size}`);
     const data = JSON.stringify(message);
     session.clients.forEach((ws) => {
       if (ws.readyState === WebSocket.OPEN) {
-        console.log(`Sending to client, message type: ${message.type}`);
+        logger.debug(`Sending to client, message type: ${message.type}`);
         ws.send(data);
       } else {
-        console.log(`Client not ready, state: ${ws.readyState}`);
+        logger.debug(`Client not ready, state: ${ws.readyState}`);
       }
     });
   }
@@ -291,7 +292,7 @@ export class SessionManager {
       const now = Date.now();
       for (const [slideId, lastActive] of this.activityTracker) {
         if (now - lastActive.getTime() > this.INACTIVITY_TIMEOUT) {
-          console.log(`Closing inactive session: ${slideId}`);
+          logger.info(`Closing inactive session: ${slideId}`);
           this.closeSession(slideId);
         }
       }
