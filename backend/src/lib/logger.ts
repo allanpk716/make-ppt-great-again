@@ -39,10 +39,3 @@ export const logger = winston.createLogger({
     })
   ]
 });
-
-// 开发环境使用更简单的格式
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }));
-}

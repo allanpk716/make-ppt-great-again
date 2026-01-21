@@ -1,0 +1,274 @@
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs/promises';
+import { WebSocket } from 'ws';
+import { logger } from '../lib/logger.js';
+export class SessionManager {
+    static sessions = new Map();
+    static projectsBasePath = path.join(process.cwd(), 'projects');
+    static activityTracker = new Map();
+    static INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30分钟
+    static MAX_CONCURRENT_SESSIONS = 5;
+    /**
+     * 初始化项目目录
+     */
+    static async initialize() {
+        try {
+            await fs.mkdir(this.projectsBasePath, { recursive: true });
+            this.startCleanupTimer();
+        }
+        catch (error) {
+            logger.error('Failed to initialize projects directory', { error });
+            throw error;
+        }
+    }
+    /**
+     * 获取或创建会话
+     */
+    static async getOrCreateSession(projectId, slideId) {
+        // 检查是否已存在
+        const existing = this.sessions.get(slideId);
+        if (existing && existing.process.exitCode === null) {
+            logger.info(`Reusing existing session for ${slideId} with ${existing.clients.size} clients`);
+            this.updateActivity(slideId);
+            return existing;
+        }
+        // 检查并发限制
+        if (this.sessions.size >= this.MAX_CONCURRENT_SESSIONS) {
+            // 清理最久未活动的会话
+            const oldestSlide = this.getOldestInactiveSession();
+            if (oldestSlide) {
+                this.closeSession(oldestSlide);
+            }
+        }
+        // 创建新会话
+        const projectPath = path.join(this.projectsBasePath, projectId, 'slides', slideId);
+        await fs.mkdir(projectPath, { recursive: true });
+        // 启动 Claude Code CLI with stream-json
+        // 在 Windows 上直接使用 cmd 来调用 claude.cmd
+        const cliProcess = spawn('cmd', ['/c', 'claude', '-p',
+            '--output-format', 'stream-json',
+            '--input-format', 'stream-json',
+            '--dangerously-skip-permissions',
+            '--include-partial-messages',
+            '--verbose'
+        ], {
+            cwd: projectPath,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            shell: false
+        });
+        const session = {
+            slideId,
+            process: cliProcess,
+            projectPath,
+            createdAt: new Date(),
+            clients: new Set()
+        };
+        this.sessions.set(slideId, session);
+        logger.info(`Session added to map for ${slideId}, total sessions: ${this.sessions.size}`);
+        this.updateActivity(slideId);
+        this.setupStdoutHandler(session);
+        this.setupProcessHandlers(session);
+        return session;
+    }
+    /**
+     * 设置 stdout 处理器（透传 stream-json）
+     */
+    static setupStdoutHandler(session) {
+        logger.info(`Setting up stdout handler for ${session.slideId}, PID: ${session.process.pid}`);
+        if (!session.process.stdout) {
+            logger.error(`No stdout for process ${session.slideId}`);
+            return;
+        }
+        session.process.stdout.on('data', (chunk) => {
+            logger.debug(`CLI stdout [${session.slideId}]:`, chunk.toString().substring(0, 200));
+            const lines = chunk.toString().split('\n');
+            for (const line of lines) {
+                if (!line.trim())
+                    continue;
+                try {
+                    // 验证是否为有效 JSON
+                    const json = JSON.parse(line);
+                    // 透传到所有连接的客户端
+                    this.broadcastToSession(session.slideId, {
+                        type: 'stream',
+                        slideId: session.slideId,
+                        data: json
+                    });
+                }
+                catch {
+                    // 非JSON行作为原始文本转发
+                    this.broadcastToSession(session.slideId, {
+                        type: 'raw',
+                        slideId: session.slideId,
+                        text: line
+                    });
+                }
+            }
+        });
+        // 处理 stderr
+        if (session.process.stderr) {
+            session.process.stderr.on('data', (chunk) => {
+                logger.error(`CLI stderr [${session.slideId}]:`, chunk.toString());
+            });
+        }
+    }
+    /**
+     * 设置进程事件处理
+     */
+    static setupProcessHandlers(session) {
+        session.process.on('exit', (code) => {
+            logger.info(`CLI session ${session.slideId} exited with code ${code}`);
+            this.broadcastToSession(session.slideId, {
+                type: 'done',
+                slideId: session.slideId
+            });
+            this.sessions.delete(session.slideId);
+            this.activityTracker.delete(session.slideId);
+        });
+        session.process.on('error', (error) => {
+            logger.error(`CLI session ${session.slideId} error`, { error });
+            this.broadcastToSession(session.slideId, {
+                type: 'error',
+                slideId: session.slideId,
+                error: error.message
+            });
+        });
+    }
+    /**
+     * 发送消息到 CLI
+     * @param wsClient 可选的 WebSocket 客户端，用于在创建新会话时自动注册
+     */
+    static async sendMessage(projectId, slideId, message, wsClient) {
+        try {
+            logger.info(`SessionManager: sendMessage called - projectId: ${projectId}, slideId: ${slideId}, message: "${message}"`);
+            const isNewSession = !this.sessions.has(slideId);
+            const session = await this.getOrCreateSession(projectId, slideId);
+            logger.info(`SessionManager: Session created/retrieved, process exitCode: ${session.process.exitCode}`);
+            // 如果是新创建的会话且提供了客户端,自动注册
+            if (isNewSession && wsClient) {
+                logger.info(`Auto-registering client to new session ${slideId}`);
+                session.clients.add(wsClient);
+            }
+            // 发送消息到 CLI stdin (使用 stream-json 输入格式)
+            if (session.process.stdin) {
+                const messageJson = JSON.stringify({
+                    type: 'user',
+                    message: {
+                        role: 'user',
+                        content: message
+                    }
+                });
+                logger.debug(`SessionManager: Writing to CLI stdin: ${messageJson}`);
+                session.process.stdin.write(messageJson + '\n');
+                this.updateActivity(slideId);
+            }
+            else {
+                logger.error('SessionManager: Process stdin is not available');
+            }
+        }
+        catch (error) {
+            logger.error(`Failed to send message to ${slideId}`, { error });
+            throw error;
+        }
+    }
+    /**
+     * 注册 WebSocket 客户端
+     */
+    static registerClient(slideId, ws) {
+        const session = this.sessions.get(slideId);
+        if (session) {
+            session.clients.add(ws);
+        }
+    }
+    /**
+     * 注销 WebSocket 客户端
+     */
+    static unregisterClient(slideId, ws) {
+        const session = this.sessions.get(slideId);
+        if (session) {
+            session.clients.delete(ws);
+        }
+    }
+    /**
+     * 广播消息到会话的所有客户端
+     */
+    static broadcastToSession(slideId, message) {
+        const session = this.sessions.get(slideId);
+        if (!session) {
+            logger.debug(`No session found for ${slideId}, skipping broadcast`);
+            return;
+        }
+        logger.debug(`Broadcasting to ${slideId}, clients: ${session.clients.size}`);
+        const data = JSON.stringify(message);
+        session.clients.forEach((ws) => {
+            if (ws.readyState === WebSocket.OPEN) {
+                logger.debug(`Sending to client, message type: ${message.type}`);
+                ws.send(data);
+            }
+            else {
+                logger.debug(`Client not ready, state: ${ws.readyState}`);
+            }
+        });
+    }
+    /**
+     * 更新活跃时间
+     */
+    static updateActivity(slideId) {
+        this.activityTracker.set(slideId, new Date());
+    }
+    /**
+     * 获取最久未活动的会话
+     */
+    static getOldestInactiveSession() {
+        let oldest = null;
+        let oldestTime = Date.now();
+        for (const [slideId, lastActive] of this.activityTracker) {
+            if (lastActive.getTime() < oldestTime) {
+                oldest = slideId;
+                oldestTime = lastActive.getTime();
+            }
+        }
+        return oldest;
+    }
+    /**
+     * 关闭会话
+     */
+    static closeSession(slideId) {
+        const session = this.sessions.get(slideId);
+        if (session) {
+            session.process.kill();
+            session.clients.forEach(ws => ws.close());
+            this.sessions.delete(slideId);
+            this.activityTracker.delete(slideId);
+        }
+    }
+    /**
+     * 关闭所有会话
+     */
+    static closeAllSessions() {
+        this.sessions.forEach((session, slideId) => {
+            this.closeSession(slideId);
+        });
+    }
+    /**
+     * 启动清理定时器
+     */
+    static startCleanupTimer() {
+        setInterval(() => {
+            const now = Date.now();
+            for (const [slideId, lastActive] of this.activityTracker) {
+                if (now - lastActive.getTime() > this.INACTIVITY_TIMEOUT) {
+                    logger.info(`Closing inactive session: ${slideId}`);
+                    this.closeSession(slideId);
+                }
+            }
+        }, 60000); // 每分钟检查
+    }
+    /**
+     * 获取项目基础路径
+     */
+    static getProjectsBasePath() {
+        return this.projectsBasePath;
+    }
+}

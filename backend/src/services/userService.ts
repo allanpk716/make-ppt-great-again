@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { logger } from '../lib/logger.js';
 
 // 用户数据接口
 interface UserData {
@@ -59,4 +60,4 @@ export class UserService {
 }
 
 // 初始化默认测试用户
-UserService.createUser('test-user', 'test-password').catch(console.error);
+UserService.createUser('test-user', 'test-password').catch(error => logger.error('Failed to create default test user', { error }));

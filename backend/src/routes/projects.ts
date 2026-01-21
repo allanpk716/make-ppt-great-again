@@ -2,6 +2,7 @@ import express from 'express';
 import { projectService } from '../services/projectService.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { logger } from '../lib/logger.js';
 
 interface SlideData {
   version?: string;
@@ -65,7 +66,7 @@ router.post('/create', async (req, res) => {
     });
   } catch (error) {
     const message = (error as Error).message;
-    console.error('Failed to create project:', error);
+    logger.error('Failed to create project', { error });
 
     if (message.includes('already exists')) {
       return res.status(409).json({ error: message });
@@ -86,7 +87,7 @@ router.get('/list', async (req, res) => {
     });
   } catch (error) {
     const message = (error as Error).message;
-    console.error('Failed to list projects:', error);
+    logger.error('Failed to list projects', { error });
     res.status(500).json({ error: message || 'Failed to list projects' });
   }
 });
@@ -136,12 +137,12 @@ router.get('/open', async (req, res) => {
               meta: slideMeta
             });
           } catch (error) {
-            console.warn(`Failed to read slide ${entry.name}:`, error);
+            logger.warn(`Failed to read slide ${entry.name}`, { error });
           }
         }
       }
     } catch (error) {
-      console.warn('No slides directory or error reading slides:', error);
+      logger.warn('No slides directory or error reading slides', { error });
     }
 
     // 按 slideOrder 排序
@@ -158,7 +159,7 @@ router.get('/open', async (req, res) => {
     });
   } catch (error) {
     const message = (error as Error).message;
-    console.error('Failed to open project:', error);
+    logger.error('Failed to open project', { error });
 
     if (message.includes('not found')) {
       return res.status(404).json({ error: message });
@@ -183,7 +184,7 @@ router.get('/workspace', (req, res) => {
     });
   } catch (error) {
     const message = (error as Error).message;
-    console.error('Failed to get workspace path:', error);
+    logger.error('Failed to get workspace path', { error });
     res.status(500).json({ error: message || 'Failed to get workspace path' });
   }
 });
@@ -210,7 +211,7 @@ router.put('/workspace', async (req, res) => {
     });
   } catch (error) {
     const message = (error as Error).message;
-    console.error('Failed to set workspace path:', error);
+    logger.error('Failed to set workspace path', { error });
     res.status(500).json({ error: message || 'Failed to set workspace path' });
   }
 });
@@ -292,7 +293,7 @@ router.post('/save', async (req, res) => {
     });
   } catch (error) {
     const message = (error as Error).message;
-    console.error('Failed to save project:', error);
+    logger.error('Failed to save project', { error });
 
     if (message.includes('Permission denied')) {
       return res.status(403).json({ error: message });
