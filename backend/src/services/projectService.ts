@@ -42,19 +42,20 @@ class ProjectService {
   }
 
   async setWorkspacePath(newPath: string): Promise<void> {
-    // 验证路径不为空
-    if (!newPath || newPath.trim() === '') {
-      throw new Error('Workspace path cannot be empty');
-    }
+    // 验证和清理路径
+    const sanitizedPath = ProjectService.validateAndSanitizePath(newPath);
 
     const oldWorkspacePath = this.workspacePath;
     const oldRecentProjectsPath = this.recentProjectsPath;
 
     try {
-      // 尝试创建新目录结构
-      await fs.mkdir(newPath, { recursive: true });
+      // 创建相对于当前工作目录的完整路径
+      const fullPath = path.join(process.cwd(), sanitizedPath);
 
-      const newRecentProjectsPath = path.join(newPath, 'recentProjects.json');
+      // 尝试创建新目录结构
+      await fs.mkdir(fullPath, { recursive: true });
+
+      const newRecentProjectsPath = path.join(fullPath, 'recentProjects.json');
 
       // 创建或保留 recentProjects.json
       try {
@@ -64,10 +65,10 @@ class ProjectService {
       }
 
       // 验证成功后才更新状态
-      this.workspacePath = newPath;
+      this.workspacePath = fullPath;
       this.recentProjectsPath = newRecentProjectsPath;
 
-      console.log(`Workspace path updated to: ${newPath}`);
+      console.log(`Workspace path updated to: ${fullPath}`);
     } catch (error) {
       // 失败时回滚到旧路径
       this.workspacePath = oldWorkspacePath;
@@ -77,36 +78,63 @@ class ProjectService {
     }
   }
 
+  private static validateAndSanitizePath(inputPath: string): string {
+    // 检查空路径
+    if (!inputPath || inputPath.trim() === '') {
+      throw new Error('Path cannot be empty');
+    }
+
+    // 检查路径遍历攻击
+    if (inputPath.includes('..') || inputPath.includes('~')) {
+      throw new Error('Path cannot contain parent directory references');
+    }
+
+    // 检查绝对路径 (Windows 和 Unix)
+    const isAbsolutePath = /^[a-zA-Z]:\\|^\//.test(inputPath);
+    if (isAbsolutePath) {
+      throw new Error('Absolute paths are not allowed');
+    }
+
+    // 检查无效字符 - 如果包含这些字符则拒绝
+    if (/[<>:"|?*&]/.test(inputPath)) {
+      throw new Error('Path contains invalid characters');
+    }
+
+    // 清理路径分隔符
+    return inputPath.replace(/[\/\\]/g, '').trim();
+  }
+
   async createProject(options: CreateProjectOptions): Promise<ProjectMeta> {
     // 验证项目名称
     if (!options.name || options.name.trim() === '') {
       throw new Error('Project name cannot be empty');
     }
 
-    // 清理项目名称，防止路径遍历攻击
-    const sanitizedName = options.name
-      .replace(/[<>:"|?*]/g, '') // 移除 Windows 非法字符
-      .replace(/\.\./g, '') // 移除路径遍历
-      .replace(/[\/\\]/g, '') // 移除路径分隔符
-      .trim();
+    // 使用统一的路径验证
+    const sanitizedName = ProjectService.validateAndSanitizePath(options.name);
 
     if (sanitizedName === '') {
       throw new Error('Project name contains invalid characters');
     }
 
-    // 确定项目路径
-    const projectPath = options.location
-      ? path.join(options.location, sanitizedName)
-      : path.join(this.workspacePath, sanitizedName);
-
-    // 验证 location 是否存在（如果提供）
+    // 处理 location 参数
+    let locationPath: string;
     if (options.location) {
+      // 验证 location 是否存在且在允许范围内
       try {
-        await fs.access(options.location);
+        const stats = await fs.stat(options.location);
+        if (!stats.isDirectory()) {
+          throw new Error('Location must be a directory');
+        }
+        locationPath = options.location;
       } catch {
         throw new Error(`Location does not exist: ${options.location}`);
       }
+    } else {
+      locationPath = this.workspacePath;
     }
+
+    const projectPath = path.join(locationPath, sanitizedName);
 
     // 检查项目是否已存在
     try {
@@ -295,4 +323,5 @@ class ProjectService {
   }
 }
 
+export { ProjectService };
 export const projectService = new ProjectService();
