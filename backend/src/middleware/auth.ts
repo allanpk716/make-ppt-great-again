@@ -19,7 +19,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     const user = tokenManager.verifyToken(token);
     req.user = user;
     next();
-  } catch (_error) {
+  } catch {
     res.status(403).json({ error: 'Invalid or expired token' });
   }
 }

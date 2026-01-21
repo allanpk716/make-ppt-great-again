@@ -13,7 +13,7 @@ describe('IndexedDBStorage', () => {
   afterEach(async () => {
     try {
       await storage.clear();
-    } catch (_error) {
+    } catch {
       // 忽略清理错误
     }
   });

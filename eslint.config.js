@@ -52,6 +52,7 @@ export default [
       'prettier/prettier': 'error',
       'no-undef': 'off', // Disable for TypeScript files
       'no-useless-escape': 'warn',
+      'no-unused-vars': 'off', // Use @typescript-eslint/no-unused-vars instead
     },
   },
 
@@ -90,6 +91,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       'prettier/prettier': 'error',
       'no-undef': 'off', // Disable for TypeScript files
+      'no-unused-vars': 'off', // Use @typescript-eslint/no-unused-vars instead
     },
     settings: {
       react: {

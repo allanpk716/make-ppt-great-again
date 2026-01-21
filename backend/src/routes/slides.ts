@@ -19,7 +19,7 @@ router.get('/:projectId/slides/:slideId', async (req, res) => {
 
     const data = await fs.readFile(slidePath, 'utf-8');
     res.json(JSON.parse(data));
-  } catch (_error) {
+  } catch {
     res.status(404).json({ error: 'Slide not found' });
   }
 });
@@ -40,7 +40,7 @@ router.put('/:projectId/slides/:slideId', async (req, res) => {
 
     await fs.writeFile(slidePath, JSON.stringify(pageData, null, 2));
     res.json({ success: true });
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to update slide' });
   }
 });
@@ -76,7 +76,7 @@ router.post('/:projectId/slides', async (req, res) => {
     await fs.writeFile(path.join(slidePath, 'meta.json'), JSON.stringify(meta, null, 2));
 
     res.json({ slideId, data: pageData, meta });
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to create slide' });
   }
 });
