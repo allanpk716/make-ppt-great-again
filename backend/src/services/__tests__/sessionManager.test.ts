@@ -1,3 +1,17 @@
+/**
+ * SessionManager 单元测试
+ *
+ * TECHNICAL DEBT NOTE:
+ * 3 个 initialize 测试由于 Jest ESM 模式的 mock 限制而失败:
+ * - should create projects directory
+ * - should start cleanup timer on initialization
+ * - should throw error when directory creation fails
+ *
+ * 根本原因：jest.requireMock() 在 ESM 模式下无法正确拦截 fs/promises 模块导入
+ * 实际服务逻辑正确 - 已在集成测试中验证
+ * TODO: 考虑迁移到 Vitest 或等待 Jest 后续版本的 ESM 改进
+ */
+
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { SessionManager } from '../sessionManager';
 
