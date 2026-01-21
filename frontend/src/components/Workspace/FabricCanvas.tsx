@@ -33,9 +33,10 @@ export const FabricCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { currentSlideId, slides, updateSlideData, selectElement, selectedElementId } = usePPTStore();
+  const { currentSlideId, slides, updateSlideData, selectElement, selectedElementId } =
+    usePPTStore();
 
-  const currentSlide = slides.find(s => s.id === currentSlideId);
+  const currentSlide = slides.find((s) => s.id === currentSlideId);
 
   // 节流的保存函数
   const saveToStore = useCallback(
@@ -58,7 +59,7 @@ export const FabricCanvas: React.FC = () => {
       height: 360,
       backgroundColor: '#ffffff',
       preserveObjectStacking: true,
-      renderOnAddRemove: false // 性能优化：手动控制渲染
+      renderOnAddRemove: false, // 性能优化：手动控制渲染
     });
 
     fabricCanvasRef.current = canvas;
@@ -117,7 +118,7 @@ export const FabricCanvas: React.FC = () => {
     // 设置选中状态
     if (selectedElementId) {
       const objects = fabricCanvasRef.current.getObjects();
-      const selectedObj = objects.find(obj => (obj as any).id === selectedElementId);
+      const selectedObj = objects.find((obj) => (obj as any).id === selectedElementId);
       if (selectedObj) {
         fabricCanvasRef.current.setActiveObject(selectedObj);
         fabricCanvasRef.current.renderAll();
@@ -133,10 +134,5 @@ export const FabricCanvas: React.FC = () => {
     );
   }
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="border border-slate-200"
-    />
-  );
+  return <canvas ref={canvasRef} className="border border-slate-200" />;
 };

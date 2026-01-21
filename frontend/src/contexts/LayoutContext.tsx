@@ -64,8 +64,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [chatWidth, setChatWidth]);
 
   return (
-    <LayoutContext.Provider value={{ chatWidth, setChatWidth }}>
-      {children}
-    </LayoutContext.Provider>
+    <LayoutContext.Provider value={{ chatWidth, setChatWidth }}>{children}</LayoutContext.Provider>
   );
 };

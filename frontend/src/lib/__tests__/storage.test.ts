@@ -31,23 +31,25 @@ describe('IndexedDBStorage', () => {
 
   it('should handle large datasets', async () => {
     const largeData = {
-      slides: Array(1000).fill(null).map((_, i) => ({
-        id: `slide-${i}`,
-        displayIndex: i,
-        data: {
-          version: '1.0',
-          pageSize: { width: 1280, height: 720 },
-          background: '#fff',
-          elements: []
-        },
-        meta: {
-          summary: `Slide ${i}`,
+      slides: Array(1000)
+        .fill(null)
+        .map((_, i) => ({
+          id: `slide-${i}`,
           displayIndex: i,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      })),
-      title: 'Large Project'
+          data: {
+            version: '1.0',
+            pageSize: { width: 1280, height: 720 },
+            background: '#fff',
+            elements: [],
+          },
+          meta: {
+            summary: `Slide ${i}`,
+            displayIndex: i,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        })),
+      title: 'Large Project',
     };
 
     await storage.setItem('large', JSON.stringify(largeData));

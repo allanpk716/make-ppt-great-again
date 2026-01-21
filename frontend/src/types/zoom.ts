@@ -1,6 +1,6 @@
 export interface ZoomState {
-  level: number;           // 当前缩放级别（0.25 - 4.0）
-  isAutoFit: boolean;     // 是否为"适应页面"模式
+  level: number; // 当前缩放级别（0.25 - 4.0）
+  isAutoFit: boolean; // 是否为"适应页面"模式
   lastManualLevel: number; // 上次手动设置的缩放级别
 }
 

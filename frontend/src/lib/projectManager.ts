@@ -8,14 +8,14 @@ export class ProjectManager {
         title: project.meta.title,
         createdAt: project.meta.createdAt,
         exportedAt: new Date().toISOString(),
-        appVersion: '0.1.0'
+        appVersion: '0.1.0',
       },
-      slides: project.slides.map(slide => ({
+      slides: project.slides.map((slide) => ({
         id: slide.id,
         displayIndex: slide.displayIndex,
         data: slide.data,
-        meta: slide.meta
-      }))
+        meta: slide.meta,
+      })),
     };
 
     const json = JSON.stringify(exportPackage, null, 2);
@@ -30,8 +30,8 @@ export class ProjectManager {
     const isValid = await fetch('/api/project/validate-version', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ version: pkg.version })
-    }).then(r => r.json());
+      body: JSON.stringify({ version: pkg.version }),
+    }).then((r) => r.json());
 
     if (!isValid.valid) {
       throw new Error(`不支持的版本: ${pkg.version}`);
@@ -42,14 +42,14 @@ export class ProjectManager {
         title: pkg.meta.title,
         createdAt: pkg.meta.createdAt,
         updatedAt: pkg.meta.createdAt,
-        version: pkg.version
+        version: pkg.version,
       },
-      slides: pkg.slides.map(s => ({
+      slides: pkg.slides.map((s) => ({
         id: s.id,
         displayIndex: s.displayIndex,
         data: s.data,
-        meta: s.meta
-      }))
+        meta: s.meta,
+      })),
     };
   }
 

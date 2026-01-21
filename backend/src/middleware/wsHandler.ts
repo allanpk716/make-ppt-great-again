@@ -39,10 +39,12 @@ export function setupWebSocket(server: Server) {
           SessionManager.registerClient(msg.slideId, ws);
 
           // 发送确认
-          ws.send(JSON.stringify({
-            type: 'registered',
-            slideId: msg.slideId
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'registered',
+              slideId: msg.slideId,
+            })
+          );
           return;
         }
 
@@ -57,15 +59,17 @@ export function setupWebSocket(server: Server) {
             msg.projectId,
             msg.slideId,
             msg.message || '',
-            ws  // 传递 WebSocket 客户端
+            ws // 传递 WebSocket 客户端
           );
         }
       } catch (error) {
         logger.error('Error processing WebSocket message', { error });
-        ws.send(JSON.stringify({
-          type: 'error',
-          error: (error as Error).message
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'error',
+            error: (error as Error).message,
+          })
+        );
       }
     });
 

@@ -27,23 +27,25 @@ describe('PPTStore', () => {
 
     it('should load project', () => {
       const mockProject = {
-        slides: [{
-          id: 'slide-1',
-          displayIndex: 0,
-          data: {
-            version: '1.0',
-            pageSize: { width: 1280, height: 720 },
-            background: '#ffffff',
-            elements: []
-          },
-          meta: {
-            summary: 'Test Slide',
+        slides: [
+          {
+            id: 'slide-1',
             displayIndex: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
-        }],
-        title: 'Test Project'
+            data: {
+              version: '1.0',
+              pageSize: { width: 1280, height: 720 },
+              background: '#ffffff',
+              elements: [],
+            },
+            meta: {
+              summary: 'Test Slide',
+              displayIndex: 0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        ],
+        title: 'Test Project',
       };
 
       usePPTStore.getState().loadProject(mockProject, '/test/path');
@@ -121,22 +123,24 @@ describe('PPTStore', () => {
         version: '1.0',
         pageSize: { width: 1280, height: 720 },
         background: '#ffffff',
-        elements: [{
-          id: elementId,
-          type: 'text',
-          x: 0,
-          y: 0,
-          width: 100,
-          height: 50,
-          content: 'Test',
-          style: {
-            fontSize: 16,
-            fontWeight: 'normal',
-            fill: '#000000',
-            fontFamily: 'Arial'
+        elements: [
+          {
+            id: elementId,
+            type: 'text',
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+            content: 'Test',
+            style: {
+              fontSize: 16,
+              fontWeight: 'normal',
+              fill: '#000000',
+              fontFamily: 'Arial',
+            },
+            textAlign: 'left',
           },
-          textAlign: 'left'
-        }]
+        ],
       });
 
       usePPTStore.getState().selectElement(elementId);

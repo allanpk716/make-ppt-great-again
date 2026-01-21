@@ -17,51 +17,57 @@ const asyncHandler = (fn: AsyncHandler) => {
 };
 
 // 登录
-router.post('/login', asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+router.post(
+  '/login',
+  asyncHandler(async (req, res) => {
+    const { username, password } = req.body;
 
-  if (!username || !password) {
-    res.status(400).json({ error: 'Username and password required' });
-    return;
-  }
-
-  const isValid = await UserService.validateUser(username, password);
-
-  if (!isValid) {
-    res.status(401).json({ error: 'Invalid credentials' });
-    return;
-  }
-
-  const token = generateAuthToken({ userId: username });
-  res.json({ token, username });
-}));
-
-// 注册
-router.post('/register', asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    res.status(400).json({ error: 'Username and password required' });
-    return;
-  }
-
-  if (password.length < 6) {
-    res.status(400).json({ error: 'Password must be at least 6 characters' });
-    return;
-  }
-
-  try {
-    await UserService.createUser(username, password);
-    const token = generateAuthToken({ userId: username });
-
-    res.status(201).json({ token, username });
-  } catch (error) {
-    if ((error as Error).message === 'User already exists') {
-      res.status(409).json({ error: 'Username already exists' });
+    if (!username || !password) {
+      res.status(400).json({ error: 'Username and password required' });
       return;
     }
-    throw error;
-  }
-}));
+
+    const isValid = await UserService.validateUser(username, password);
+
+    if (!isValid) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const token = generateAuthToken({ userId: username });
+    res.json({ token, username });
+  })
+);
+
+// 注册
+router.post(
+  '/register',
+  asyncHandler(async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      res.status(400).json({ error: 'Username and password required' });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return;
+    }
+
+    try {
+      await UserService.createUser(username, password);
+      const token = generateAuthToken({ userId: username });
+
+      res.status(201).json({ token, username });
+    } catch (error) {
+      if ((error as Error).message === 'User already exists') {
+        res.status(409).json({ error: 'Username already exists' });
+        return;
+      }
+      throw error;
+    }
+  })
+);
 
 export default router;

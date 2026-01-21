@@ -7,7 +7,7 @@ interface ZoomControlsProps {
 }
 
 export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) => {
-  const { level, zoomIn, zoomOut, setZoom, resetToFit } = useZoom();  // 使用 level
+  const { level, zoomIn, zoomOut, setZoom, resetToFit } = useZoom(); // 使用 level
 
   // 键盘快捷键
   useEffect(() => {
@@ -44,7 +44,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
     }
   };
 
-  const zoomPercentage = Math.round(level * 100);  // 使用 level
+  const zoomPercentage = Math.round(level * 100); // 使用 level
 
   // 预设的缩放选项
   const presetOptions = [25, 50, 75, 100, 125, 150, 200];
@@ -54,7 +54,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
       {/* 缩小按钮 */}
       <button
         onClick={zoomOut}
-        disabled={disabled || level <= 0.25}  // 使用 level
+        disabled={disabled || level <= 0.25} // 使用 level
         className="p-1 hover:bg-slate-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="缩小"
         title="缩小"
@@ -74,7 +74,9 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
         className="px-2 py-1 border border-slate-300 rounded text-sm min-w-[80px] disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         {presetOptions.map((option) => (
-          <option key={option} value={option}>{option}%</option>
+          <option key={option} value={option}>
+            {option}%
+          </option>
         ))}
         {/* 如果当前缩放级别不在预设值中，动态添加选项 */}
         {!presetOptions.includes(zoomPercentage) && (
@@ -86,7 +88,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ disabled = false }) 
       {/* 放大按钮 */}
       <button
         onClick={zoomIn}
-        disabled={disabled || level >= 4.0}  // 使用 level
+        disabled={disabled || level >= 4.0} // 使用 level
         className="p-1 hover:bg-slate-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="放大"
         title="放大"

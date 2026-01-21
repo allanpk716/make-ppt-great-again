@@ -2,11 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../lib/logger.js';
-import type {
-  ProjectMeta,
-  CreateProjectOptions,
-  ProjectListItem,
-} from '../types/project.js';
+import type { ProjectMeta, CreateProjectOptions, ProjectListItem } from '../types/project.js';
 
 class ProjectService {
   private workspacePath: string;
@@ -172,7 +168,7 @@ class ProjectService {
     // 写入 project.json
     await fs.writeFile(
       path.join(projectPath, 'project.json'),
-      JSON.stringify(projectMeta, null, 2),
+      JSON.stringify(projectMeta, null, 2)
     );
 
     logger.info(`Project created: ${projectPath}`);
@@ -298,7 +294,7 @@ class ProjectService {
         ...projectMeta,
         ...updates,
         // 确保 updatedAt 被更新
-        ...(updates.updatedAt ? {} : { updatedAt: new Date().toISOString() })
+        ...(updates.updatedAt ? {} : { updatedAt: new Date().toISOString() }),
       };
 
       // 写入更新后的内容

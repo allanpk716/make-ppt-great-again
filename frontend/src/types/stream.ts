@@ -29,4 +29,4 @@ export interface DisplayMessage {
 }
 
 // 导出 assistant-ui 兼容类型
-export type { AssistantMessage, AssistantMessagePart } from "@/lib/messageConverter";
+export type { AssistantMessage, AssistantMessagePart } from '@/lib/messageConverter';

@@ -44,7 +44,7 @@ export const WelcomeScreen: React.FC = () => {
       const response = await fetch('/api/projects/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name }),
       });
 
       if (!response.ok) {
@@ -70,16 +70,13 @@ export const WelcomeScreen: React.FC = () => {
       const data = await response.json();
 
       // 加载项目数据到 store
-      loadProject(
-        { slides: data.data.slides, title: data.data.meta.title || '未命名项目' },
-        path
-      );
+      loadProject({ slides: data.data.slides, title: data.data.meta.title || '未命名项目' }, path);
 
       // 添加到最近项目
       const recentProject: RecentProject = {
         path,
         title: data.data.meta.title || '未命名项目',
-        lastOpened: new Date().toISOString()
+        lastOpened: new Date().toISOString(),
       };
       addRecentProject(recentProject);
     } catch (error) {
@@ -143,9 +140,7 @@ export const WelcomeScreen: React.FC = () => {
             )}
 
             {recentProjects.length === 0 && projects.length === 0 && !loading && (
-              <div className="text-center text-slate-500 py-8">
-                暂无最近项目
-              </div>
+              <div className="text-center text-slate-500 py-8">暂无最近项目</div>
             )}
           </div>
         )}

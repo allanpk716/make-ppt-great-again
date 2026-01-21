@@ -59,24 +59,33 @@ export class SessionManager {
 
     // 启动 Claude Code CLI with stream-json
     // 在 Windows 上直接使用 cmd 来调用 claude.cmd
-    const cliProcess = spawn('cmd', ['/c', 'claude', '-p',
-      '--output-format', 'stream-json',
-      '--input-format', 'stream-json',
-      '--dangerously-skip-permissions',
-      '--include-partial-messages',
-      '--verbose'
-    ], {
-      cwd: projectPath,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: false
-    });
+    const cliProcess = spawn(
+      'cmd',
+      [
+        '/c',
+        'claude',
+        '-p',
+        '--output-format',
+        'stream-json',
+        '--input-format',
+        'stream-json',
+        '--dangerously-skip-permissions',
+        '--include-partial-messages',
+        '--verbose',
+      ],
+      {
+        cwd: projectPath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: false,
+      }
+    );
 
     const session: CLISession = {
       slideId,
       process: cliProcess,
       projectPath,
       createdAt: new Date(),
-      clients: new Set()
+      clients: new Set(),
     };
 
     this.sessions.set(slideId, session);
@@ -113,14 +122,14 @@ export class SessionManager {
           this.broadcastToSession(session.slideId, {
             type: 'stream',
             slideId: session.slideId,
-            data: json
+            data: json,
           });
         } catch {
           // 非JSON行作为原始文本转发
           this.broadcastToSession(session.slideId, {
             type: 'raw',
             slideId: session.slideId,
-            text: line
+            text: line,
           });
         }
       }
@@ -142,7 +151,7 @@ export class SessionManager {
       logger.info(`CLI session ${session.slideId} exited with code ${code}`);
       this.broadcastToSession(session.slideId, {
         type: 'done',
-        slideId: session.slideId
+        slideId: session.slideId,
       });
       this.sessions.delete(session.slideId);
       this.activityTracker.delete(session.slideId);
@@ -153,7 +162,7 @@ export class SessionManager {
       this.broadcastToSession(session.slideId, {
         type: 'error',
         slideId: session.slideId,
-        error: error.message
+        error: error.message,
       });
     });
   }
@@ -162,12 +171,21 @@ export class SessionManager {
    * 发送消息到 CLI
    * @param wsClient 可选的 WebSocket 客户端，用于在创建新会话时自动注册
    */
-  static async sendMessage(projectId: string, slideId: string, message: string, wsClient?: WebSocket): Promise<void> {
+  static async sendMessage(
+    projectId: string,
+    slideId: string,
+    message: string,
+    wsClient?: WebSocket
+  ): Promise<void> {
     try {
-      logger.info(`SessionManager: sendMessage called - projectId: ${projectId}, slideId: ${slideId}, message: "${message}"`);
+      logger.info(
+        `SessionManager: sendMessage called - projectId: ${projectId}, slideId: ${slideId}, message: "${message}"`
+      );
       const isNewSession = !this.sessions.has(slideId);
       const session = await this.getOrCreateSession(projectId, slideId);
-      logger.info(`SessionManager: Session created/retrieved, process exitCode: ${session.process.exitCode}`);
+      logger.info(
+        `SessionManager: Session created/retrieved, process exitCode: ${session.process.exitCode}`
+      );
 
       // 如果是新创建的会话且提供了客户端,自动注册
       if (isNewSession && wsClient) {
@@ -181,8 +199,8 @@ export class SessionManager {
           type: 'user',
           message: {
             role: 'user',
-            content: message
-          }
+            content: message,
+          },
         });
         logger.debug(`SessionManager: Writing to CLI stdin: ${messageJson}`);
         session.process.stdin.write(messageJson + '\n');
@@ -269,7 +287,7 @@ export class SessionManager {
     const session = this.sessions.get(slideId);
     if (session) {
       session.process.kill();
-      session.clients.forEach(ws => ws.close());
+      session.clients.forEach((ws) => ws.close());
       this.sessions.delete(slideId);
       this.activityTracker.delete(slideId);
     }

@@ -12,7 +12,7 @@ export class TokenManager {
 
   generateToken(payload: TokenPayload): string {
     return jwt.sign(payload, this.secret, {
-      expiresIn: this.defaultExpiration
+      expiresIn: this.defaultExpiration,
     } as jwt.SignOptions);
   }
 

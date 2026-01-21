@@ -23,7 +23,12 @@ const loadZoomFromStorage = (): { level: number; isAutoFit: boolean } | null => 
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.level && !isNaN(parsed.level) && parsed.level >= MIN_ZOOM && parsed.level <= MAX_ZOOM) {
+      if (
+        parsed.level &&
+        !isNaN(parsed.level) &&
+        parsed.level >= MIN_ZOOM &&
+        parsed.level <= MAX_ZOOM
+      ) {
         return { level: parsed.level, isAutoFit: parsed.isAutoFit || false };
       }
     }
@@ -65,28 +70,31 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // 计算适应页面的缩放比例
-  const calculateFitToPage = useCallback((container: HTMLElement): number => {
-    const currentSlide = slides.find(s => s.id === currentSlideId);
-    if (!currentSlide) return DEFAULT_ZOOM;
+  const calculateFitToPage = useCallback(
+    (container: HTMLElement): number => {
+      const currentSlide = slides.find((s) => s.id === currentSlideId);
+      if (!currentSlide) return DEFAULT_ZOOM;
 
-    // PPT 实际尺寸（除以 2 后的显示尺寸）
-    const canvasWidth = currentSlide.data.pageSize.width / 2;   // 640px
-    const canvasHeight = currentSlide.data.pageSize.height / 2; // 360px
+      // PPT 实际尺寸（除以 2 后的显示尺寸）
+      const canvasWidth = currentSlide.data.pageSize.width / 2; // 640px
+      const canvasHeight = currentSlide.data.pageSize.height / 2; // 360px
 
-    // 可用容器尺寸（减去 padding 64px）
-    const availableWidth = container.clientWidth - 64;
-    const availableHeight = container.clientHeight - 64;
+      // 可用容器尺寸（减去 padding 64px）
+      const availableWidth = container.clientWidth - 64;
+      const availableHeight = container.clientHeight - 64;
 
-    // 计算两个方向的缩放比例
-    const scaleX = availableWidth / canvasWidth;
-    const scaleY = availableHeight / canvasHeight;
+      // 计算两个方向的缩放比例
+      const scaleX = availableWidth / canvasWidth;
+      const scaleY = availableHeight / canvasHeight;
 
-    // 取较小值确保完整显示，最大不超过 1.0（100%）
-    const fitScale = Math.min(scaleX, scaleY, 1.0);
+      // 取较小值确保完整显示，最大不超过 1.0（100%）
+      const fitScale = Math.min(scaleX, scaleY, 1.0);
 
-    // 确保不小于最小缩放 0.25
-    return Math.max(fitScale, MIN_ZOOM);
-  }, [slides, currentSlideId]);
+      // 确保不小于最小缩放 0.25
+      return Math.max(fitScale, MIN_ZOOM);
+    },
+    [slides, currentSlideId]
+  );
 
   // 设置缩放级别
   const setZoom = useCallback((level: number) => {
@@ -101,7 +109,7 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 放大
   const zoomIn = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       const newLevel = Math.min(MAX_ZOOM, prev.level + 0.25);
       saveZoomToStorage(newLevel, false);
       return {
@@ -114,7 +122,7 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 缩小
   const zoomOut = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       const newLevel = Math.max(MIN_ZOOM, prev.level - 0.25);
       saveZoomToStorage(newLevel, false);
       return {
@@ -129,7 +137,7 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetToFit = useCallback(() => {
     if (!containerRef.current) return;
     const fitLevel = calculateFitToPage(containerRef.current);
-    setState(prev => ({
+    setState((prev) => ({
       level: fitLevel,
       isAutoFit: true,
       lastManualLevel: prev.lastManualLevel,
@@ -143,7 +151,7 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const value: ZoomContextValue = {
-    level: state.level,  // 注意：使用 level 而不是 zoom
+    level: state.level, // 注意：使用 level 而不是 zoom
     isAutoFit: state.isAutoFit,
     setZoom,
     zoomIn,
@@ -153,9 +161,5 @@ export const ZoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registerContainer,
   };
 
-  return (
-    <ZoomContext.Provider value={value}>
-      {children}
-    </ZoomContext.Provider>
-  );
+  return <ZoomContext.Provider value={value}>{children}</ZoomContext.Provider>;
 };

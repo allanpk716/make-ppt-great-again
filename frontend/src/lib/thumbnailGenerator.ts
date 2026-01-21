@@ -30,7 +30,7 @@ export class ThumbnailGenerator {
         height: this.THUMBNAIL_HEIGHT,
         backgroundColor: '#ffffff',
         selection: false,
-        renderOnAddRemove: false // 性能优化：批量渲染
+        renderOnAddRemove: false, // 性能优化：批量渲染
       });
     }
     return this.canvas;
@@ -42,8 +42,11 @@ export class ThumbnailGenerator {
   private static cleanCache(): void {
     if (this.cache.size > this.MAX_CACHE_SIZE) {
       // 删除最早的缓存项
-      const keysToDelete = Array.from(this.cache.keys()).slice(0, this.cache.size - this.MAX_CACHE_SIZE);
-      keysToDelete.forEach(key => this.cache.delete(key));
+      const keysToDelete = Array.from(this.cache.keys()).slice(
+        0,
+        this.cache.size - this.MAX_CACHE_SIZE
+      );
+      keysToDelete.forEach((key) => this.cache.delete(key));
     }
   }
 
@@ -73,7 +76,7 @@ export class ThumbnailGenerator {
     canvas.renderOnAddRemove = false;
 
     // 转换并添加元素
-    pageData.elements.forEach(element => {
+    pageData.elements.forEach((element) => {
       try {
         const obj = FabricConverter.elementToFabric(element);
 
@@ -81,7 +84,7 @@ export class ThumbnailGenerator {
         obj.scale(scale);
         obj.set({
           left: element.x * scale,
-          top: element.y * scale
+          top: element.y * scale,
         });
 
         canvas.add(obj);
@@ -96,7 +99,7 @@ export class ThumbnailGenerator {
     // 生成 Data URL
     const dataUrl = canvas.toDataURL({
       format: 'png',
-      quality: 0.8
+      quality: 0.8,
     });
 
     // 更新缓存
@@ -109,7 +112,10 @@ export class ThumbnailGenerator {
   /**
    * 从 Canvas 对象直接生成缩略图（实时预览）
    */
-  static generateFromCanvas(sourceCanvas: fabric.Canvas, pageSize: { width: number; height: number }): string {
+  static generateFromCanvas(
+    sourceCanvas: fabric.Canvas,
+    pageSize: { width: number; height: number }
+  ): string {
     const thumbnailCanvas = this.getCanvas();
     thumbnailCanvas.clear();
 
@@ -128,7 +134,7 @@ export class ThumbnailGenerator {
         cloned.scale(scale);
         cloned.set({
           left: (obj.left || 0) * scale,
-          top: (obj.top || 0) * scale
+          top: (obj.top || 0) * scale,
         });
         thumbnailCanvas.add(cloned);
       });
@@ -139,7 +145,7 @@ export class ThumbnailGenerator {
 
     return thumbnailCanvas.toDataURL({
       format: 'png',
-      quality: 0.8
+      quality: 0.8,
     });
   }
 

@@ -8,7 +8,7 @@ export class StreamJsonParser {
   static parse(json: any): DisplayMessage | null {
     const baseMessage = {
       id: Math.random().toString(36).substring(7),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // 忽略系统事件（内部钩子响应等）
@@ -26,7 +26,7 @@ export class StreamJsonParser {
           return {
             ...baseMessage,
             type: 'text',
-            content: event.delta.text || ''
+            content: event.delta.text || '',
           };
         }
         // 可以添加其他 delta 类型的处理
@@ -57,7 +57,7 @@ export class StreamJsonParser {
           ...baseMessage,
           type: 'tool_call',
           toolName: event.content_block.name || 'unknown',
-          toolInput: event.content_block.input
+          toolInput: event.content_block.input,
         };
       }
 
@@ -70,7 +70,7 @@ export class StreamJsonParser {
       return {
         ...baseMessage,
         type: 'thinking',
-        content: json.content || ''
+        content: json.content || '',
       };
     }
 
@@ -79,7 +79,7 @@ export class StreamJsonParser {
         ...baseMessage,
         type: 'tool_call',
         toolName: json.name || 'unknown',
-        toolInput: json.input
+        toolInput: json.input,
       };
     }
 
@@ -88,7 +88,7 @@ export class StreamJsonParser {
         ...baseMessage,
         type: 'tool_result',
         toolName: json.name || 'unknown',
-        toolResult: json.output
+        toolResult: json.output,
       };
     }
 
@@ -96,7 +96,7 @@ export class StreamJsonParser {
       return {
         ...baseMessage,
         type: 'text',
-        content: json.text || ''
+        content: json.text || '',
       };
     }
 
@@ -104,7 +104,7 @@ export class StreamJsonParser {
       return {
         ...baseMessage,
         type: 'error',
-        content: json.message || '未知错误'
+        content: json.message || '未知错误',
       };
     }
 
@@ -132,7 +132,7 @@ export class StreamJsonParser {
         id: Math.random().toString(36).substring(7),
         type: 'text',
         content: text,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }

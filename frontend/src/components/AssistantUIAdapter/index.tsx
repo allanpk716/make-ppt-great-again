@@ -1,12 +1,12 @@
-import React from "react";
-import { DisplayMessage } from "@/types/stream";
+import React from 'react';
+import { DisplayMessage } from '@/types/stream';
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
   AppendMessage,
   AssistantRuntimeProvider,
-} from "@assistant-ui/react";
-import { AssistantThread } from "@/components/assistant-ui/thread";
+} from '@assistant-ui/react';
+import { AssistantThread } from '@/components/assistant-ui/thread';
 
 interface AssistantUIAdapterProps {
   messages: DisplayMessage[];
@@ -26,7 +26,7 @@ export const AssistantUIAdapter: React.FC<AssistantUIAdapterProps> = ({
   // 处理新消息
   const handleNew = async (message: AppendMessage) => {
     const content = Array.isArray(message.content)
-      ? message.content.find(c => c.type === 'text')?.text || ''
+      ? message.content.find((c) => c.type === 'text')?.text || ''
       : '';
 
     if (content && onSendMessage) {
@@ -59,10 +59,12 @@ export const AssistantUIAdapter: React.FC<AssistantUIAdapterProps> = ({
     if (msg.type === 'thinking') {
       return {
         role: 'assistant',
-        content: [{
-          type: 'reasoning',
-          text: msg.content || ''
-        }],
+        content: [
+          {
+            type: 'reasoning',
+            text: msg.content || '',
+          },
+        ],
         id: msg.id,
         createdAt: msg.timestamp || new Date(),
       };
@@ -72,12 +74,14 @@ export const AssistantUIAdapter: React.FC<AssistantUIAdapterProps> = ({
     if (msg.type === 'tool_call') {
       return {
         role: 'assistant',
-        content: [{
-          type: 'tool-call',
-          toolName: msg.toolName || '',
-          toolCallId: msg.id,
-          args: msg.toolInput || {}
-        }],
+        content: [
+          {
+            type: 'tool-call',
+            toolName: msg.toolName || '',
+            toolCallId: msg.id,
+            args: msg.toolInput || {},
+          },
+        ],
         id: msg.id,
         createdAt: msg.timestamp || new Date(),
       };

@@ -25,7 +25,7 @@ export const useProjectStore = create<ProjectStore>()(
       recentProjects: [],
       settings: {
         autoBackupInterval: 5,
-        theme: 'light'
+        theme: 'light',
       },
 
       // 设置 Workspace 路径
@@ -36,7 +36,7 @@ export const useProjectStore = create<ProjectStore>()(
       // 添加最近项目
       addRecentProject: (project) => {
         set((state) => {
-          const filtered = state.recentProjects.filter(p => p.path !== project.path);
+          const filtered = state.recentProjects.filter((p) => p.path !== project.path);
           const updated = [project, ...filtered].slice(0, 10);
           return { recentProjects: updated };
         });
@@ -45,29 +45,29 @@ export const useProjectStore = create<ProjectStore>()(
       // 移除最近项目
       removeRecentProject: (path) => {
         set((state) => ({
-          recentProjects: state.recentProjects.filter(p => p.path !== path)
+          recentProjects: state.recentProjects.filter((p) => p.path !== path),
         }));
       },
 
       // 更新设置
       updateSettings: (newSettings) => {
         set((state) => ({
-          settings: { ...state.settings, ...newSettings }
+          settings: { ...state.settings, ...newSettings },
         }));
       },
 
       // 清空最近项目
       clearRecentProjects: () => {
         set({ recentProjects: [] });
-      }
+      },
     }),
     {
       name: 'project-storage',
       partialize: (state) => ({
         workspacePath: state.workspacePath,
         recentProjects: state.recentProjects,
-        settings: state.settings
-      })
+        settings: state.settings,
+      }),
     }
   )
 );

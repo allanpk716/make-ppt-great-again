@@ -13,10 +13,10 @@ export class FabricConverter {
     canvas.setBackgroundColor(pageData.background, () => {});
 
     // 转换元素
-    const fabricObjects = pageData.elements.map(element => this.elementToFabric(element));
+    const fabricObjects = pageData.elements.map((element) => this.elementToFabric(element));
 
     // 添加到画布
-    fabricObjects.forEach(obj => {
+    fabricObjects.forEach((obj) => {
       canvas.add(obj);
     });
 
@@ -52,7 +52,7 @@ export class FabricConverter {
       fontFamily: element.style.fontFamily,
       textAlign: element.textAlign,
       selectable: true,
-      hasControls: true
+      hasControls: true,
     } as any);
   }
 
@@ -72,7 +72,7 @@ export class FabricConverter {
       rx: element.style.rx,
       ry: element.style.ry,
       selectable: true,
-      hasControls: true
+      hasControls: true,
     } as any);
   }
 
@@ -81,16 +81,16 @@ export class FabricConverter {
    */
   static fabricToPage(canvas: fabric.Canvas): PageData {
     const objects = canvas.getObjects();
-    const elements: PPTElement[] = objects.map(obj => this.fabricToElement(obj));
+    const elements: PPTElement[] = objects.map((obj) => this.fabricToElement(obj));
 
     return {
       version: '1.0',
       pageSize: {
         width: canvas.width || 1280,
-        height: canvas.height || 720
+        height: canvas.height || 720,
       },
       background: (canvas.backgroundColor as string) || '#ffffff',
-      elements
+      elements,
     };
   }
 
@@ -113,9 +113,9 @@ export class FabricConverter {
           fontSize: obj.fontSize || 16,
           fontWeight: (obj.fontWeight === 'bold' ? 'bold' : 'normal') as 'normal' | 'bold',
           fill: (obj.fill as string) || '#000000',
-          fontFamily: obj.fontFamily || 'Arial'
+          fontFamily: obj.fontFamily || 'Arial',
         },
-        textAlign: (obj.textAlign as 'left' | 'center' | 'right') || 'left'
+        textAlign: (obj.textAlign as 'left' | 'center' | 'right') || 'left',
       } as TextElement;
     }
 
@@ -132,8 +132,8 @@ export class FabricConverter {
           stroke: obj.stroke as string,
           strokeWidth: obj.strokeWidth,
           rx: obj.rx,
-          ry: obj.ry
-        }
+          ry: obj.ry,
+        },
       } as RectElement;
     }
 
@@ -146,8 +146,8 @@ export class FabricConverter {
       width: obj.width || 100,
       height: obj.height || 100,
       style: {
-        fill: '#cccccc'
-      }
+        fill: '#cccccc',
+      },
     } as RectElement;
   }
 }

@@ -24,7 +24,7 @@ export class WebSocketClient {
         this.ws.onopen = () => {
           console.log('WebSocket connected');
           this.reconnectAttempts = 0;
-          this.connectionHandlers.forEach(handler => handler());
+          this.connectionHandlers.forEach((handler) => handler());
           resolve();
         };
 
@@ -38,7 +38,7 @@ export class WebSocketClient {
           try {
             const data: WSMessage = JSON.parse(event.data);
             console.log('WebSocket parsed message:', data.type);
-            this.messageHandlers.forEach(handler => handler(data));
+            this.messageHandlers.forEach((handler) => handler(data));
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
           }
@@ -59,7 +59,9 @@ export class WebSocketClient {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
 
-      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      console.log(
+        `Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+      );
 
       setTimeout(() => {
         this.connect().catch((error) => {
@@ -86,7 +88,7 @@ export class WebSocketClient {
     this.send({
       type: 'register',
       projectId,
-      slideId
+      slideId,
     });
   }
 

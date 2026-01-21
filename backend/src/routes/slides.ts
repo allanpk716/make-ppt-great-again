@@ -51,12 +51,7 @@ router.post('/:projectId/slides', async (req, res) => {
     const { projectId } = req.params;
     const slideId = req.body.slideId || Math.random().toString(36).substring(2, 9);
 
-    const slidePath = path.join(
-      SessionManager.getProjectsBasePath(),
-      projectId,
-      'slides',
-      slideId
-    );
+    const slidePath = path.join(SessionManager.getProjectsBasePath(), projectId, 'slides', slideId);
 
     await fs.mkdir(slidePath, { recursive: true });
 
@@ -65,26 +60,20 @@ router.post('/:projectId/slides', async (req, res) => {
       version: '1.0',
       pageSize: { width: 1280, height: 720 },
       background: '#ffffff',
-      elements: []
+      elements: [],
     };
 
-    await fs.writeFile(
-      path.join(slidePath, 'page.json'),
-      JSON.stringify(pageData, null, 2)
-    );
+    await fs.writeFile(path.join(slidePath, 'page.json'), JSON.stringify(pageData, null, 2));
 
     // 创建元数据
     const meta = {
       summary: '空白页',
       displayIndex: req.body.displayIndex || 0,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
-    await fs.writeFile(
-      path.join(slidePath, 'meta.json'),
-      JSON.stringify(meta, null, 2)
-    );
+    await fs.writeFile(path.join(slidePath, 'meta.json'), JSON.stringify(meta, null, 2));
 
     res.json({ slideId, data: pageData, meta });
   } catch (error) {

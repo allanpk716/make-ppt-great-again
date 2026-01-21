@@ -22,12 +22,10 @@ describe('Auth API', () => {
 
   describe('POST /api/auth/login', () => {
     it('should return token for valid credentials', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          username: 'test-user',
-          password: 'test-password'
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        username: 'test-user',
+        password: 'test-password',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('token');
@@ -35,23 +33,19 @@ describe('Auth API', () => {
     });
 
     it('should reject invalid credentials', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          username: 'test-user',
-          password: 'wrong-password'
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        username: 'test-user',
+        password: 'wrong-password',
+      });
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('error');
     });
 
     it('should require username and password', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          username: 'test-user'
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        username: 'test-user',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -61,12 +55,10 @@ describe('Auth API', () => {
   describe('POST /api/auth/register', () => {
     it('should create new user and return token', async () => {
       const uniqueUsername = `new-user-${Date.now()}`;
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          username: uniqueUsername,
-          password: 'password123'
-        });
+      const response = await request(app).post('/api/auth/register').send({
+        username: uniqueUsername,
+        password: 'password123',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('token');
@@ -74,24 +66,20 @@ describe('Auth API', () => {
     });
 
     it('should require password to be at least 6 characters', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          username: 'short-pass-user',
-          password: '12345'
-        });
+      const response = await request(app).post('/api/auth/register').send({
+        username: 'short-pass-user',
+        password: '12345',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
     });
 
     it('should reject duplicate username', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          username: 'test-user',
-          password: 'password123'
-        });
+      const response = await request(app).post('/api/auth/register').send({
+        username: 'test-user',
+        password: 'password123',
+      });
 
       expect(response.status).toBe(409);
       expect(response.body).toHaveProperty('error');

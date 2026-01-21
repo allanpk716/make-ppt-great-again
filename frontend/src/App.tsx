@@ -20,7 +20,7 @@ function AppContent() {
     createNewProject,
     loadProject,
     saveProject,
-    markDirty
+    markDirty,
   } = usePPTStore();
   const { addRecentProject } = useProjectStore();
   const [showOpenProjectDialog, setShowOpenProjectDialog] = useState(false);
@@ -37,7 +37,9 @@ function AppContent() {
   // 处理从对话框选择打开项目
   const handleOpenProjectFromDialog = async (projectPath: string) => {
     try {
-      const response = await fetch(`/api/projects/open?projectPath=${encodeURIComponent(projectPath)}`);
+      const response = await fetch(
+        `/api/projects/open?projectPath=${encodeURIComponent(projectPath)}`
+      );
       if (!response.ok) {
         throw new Error('Failed to open project');
       }
@@ -53,7 +55,7 @@ function AppContent() {
       const recentProject: RecentProject = {
         path: projectPath,
         title: data.data.meta.title || '未命名项目',
-        lastOpened: new Date().toISOString()
+        lastOpened: new Date().toISOString(),
       };
       addRecentProject(recentProject);
     } catch (error) {
@@ -71,14 +73,17 @@ function AppContent() {
   };
 
   // 键盘快捷键处理
-  useKeyboardShortcuts({
-    'ctrl+n': handleNewProject,
-    'ctrl+o': handleOpenProject,
-    'ctrl+s': handleSaveProject,
-  }, {
-    enableMac: true,
-    preventDefault: true
-  });
+  useKeyboardShortcuts(
+    {
+      'ctrl+n': handleNewProject,
+      'ctrl+o': handleOpenProject,
+      'ctrl+s': handleSaveProject,
+    },
+    {
+      enableMac: true,
+      preventDefault: true,
+    }
+  );
 
   const handleExit = () => {
     // TODO: 实现退出逻辑

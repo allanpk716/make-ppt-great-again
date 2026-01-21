@@ -33,17 +33,13 @@ describe('Rate Limit Middleware', () => {
 
   describe('apiLimiter', () => {
     it('should allow requests within limit', async () => {
-      const response = await request(app)
-        .get('/api/test')
-        .expect(200);
+      const response = await request(app).get('/api/test').expect(200);
 
       expect(response.body).toEqual({ message: 'success' });
     });
 
     it('should set rate limit headers', async () => {
-      const response = await request(app)
-        .get('/api/test')
-        .expect(200);
+      const response = await request(app).get('/api/test').expect(200);
 
       expect(response.headers['ratelimit-limit']).toBeDefined();
       expect(response.headers['ratelimit-remaining']).toBeDefined();
@@ -60,7 +56,7 @@ describe('Rate Limit Middleware', () => {
       const responses = await Promise.all(requests);
 
       // 最后几个请求应该被限流
-      const rateLimitedResponses = responses.filter(r => r.status === 429);
+      const rateLimitedResponses = responses.filter((r) => r.status === 429);
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
 
       // 验证限流响应包含消息或为空对象（取决于 express-rate-limit 版本）
@@ -90,16 +86,14 @@ describe('Rate Limit Middleware', () => {
       const requests = [];
       for (let i = 0; i < 10; i++) {
         requests.push(
-          request(app)
-            .post('/api/auth/login')
-            .send({ username: 'test', password: 'test' })
+          request(app).post('/api/auth/login').send({ username: 'test', password: 'test' })
         );
       }
 
       const responses = await Promise.all(requests);
 
       // 验证请求都能成功（因为 skipSuccessfulRequests: true）
-      const successResponses = responses.filter(r => r.status === 200);
+      const successResponses = responses.filter((r) => r.status === 200);
       expect(successResponses.length).toBeGreaterThan(0);
 
       // 验证限流头部存在
@@ -110,9 +104,7 @@ describe('Rate Limit Middleware', () => {
 
   describe('strictLimiter', () => {
     it('should allow sensitive operations within limit', async () => {
-      const response = await request(app)
-        .post('/api/sensitive')
-        .expect(200);
+      const response = await request(app).post('/api/sensitive').expect(200);
 
       expect(response.body).toEqual({ message: 'sensitive operation' });
     });
@@ -127,12 +119,12 @@ describe('Rate Limit Middleware', () => {
       const responses = await Promise.all(requests);
 
       // 检查是否有被限流的请求
-      const rateLimitedResponses = responses.filter(r => r.status === 429);
+      const rateLimitedResponses = responses.filter((r) => r.status === 429);
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
 
       const rateLimitedResponse = rateLimitedResponses[0];
       expect(rateLimitedResponse.body).toEqual({
-        error: 'Rate limit exceeded for this operation'
+        error: 'Rate limit exceeded for this operation',
       });
     });
   });
@@ -147,7 +139,7 @@ describe('Rate Limit Middleware', () => {
       const responses = await Promise.all(requests);
 
       // 所有请求都应该成功
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual({ status: 'ok' });
       });

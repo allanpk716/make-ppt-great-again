@@ -13,11 +13,7 @@ interface OpenProjectDialogProps {
   onOpen: (projectPath: string) => void;
 }
 
-export const OpenProjectDialog: React.FC<OpenProjectDialogProps> = ({
-  open,
-  onClose,
-  onOpen
-}) => {
+export const OpenProjectDialog: React.FC<OpenProjectDialogProps> = ({ open, onClose, onOpen }) => {
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +33,7 @@ export const OpenProjectDialog: React.FC<OpenProjectDialogProps> = ({
         title: p.meta?.title || p.title || p.name || '未命名项目',
         path: p.path,
         lastOpened: p.meta?.updatedAt || p.updatedAt,
-        createdAt: p.meta?.createdAt || p.createdAt
+        createdAt: p.meta?.createdAt || p.createdAt,
       }));
 
       setProjects(projectList);
@@ -57,7 +53,7 @@ export const OpenProjectDialog: React.FC<OpenProjectDialogProps> = ({
   }, [open]);
 
   // 过滤项目
-  const filteredProjects = projects.filter(project => {
+  const filteredProjects = projects.filter((project) => {
     const title = (project.title || '').toLowerCase();
     const path = (project.path || '').toLowerCase();
     const query = searchQuery.toLowerCase();
@@ -78,12 +74,14 @@ export const OpenProjectDialog: React.FC<OpenProjectDialogProps> = ({
         {/* 标题栏 */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-gray-800">打开项目</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -116,9 +114,7 @@ export const OpenProjectDialog: React.FC<OpenProjectDialogProps> = ({
                   className="p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all cursor-pointer bg-gray-50"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-medium text-gray-800 truncate flex-1">
-                      {project.title}
-                    </h3>
+                    <h3 className="font-medium text-gray-800 truncate flex-1">{project.title}</h3>
                   </div>
                   <p className="text-sm text-gray-500 truncate mb-2">{project.path}</p>
                   {project.lastOpened && (

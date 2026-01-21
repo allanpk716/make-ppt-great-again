@@ -19,7 +19,9 @@ describe('ProjectService - Path Security', () => {
     });
 
     it('should reject absolute paths outside workspace', async () => {
-      await expect(projectService.setWorkspacePath('C:\\Windows\\System32')).rejects.toThrow('Absolute paths');
+      await expect(projectService.setWorkspacePath('C:\\Windows\\System32')).rejects.toThrow(
+        'Absolute paths'
+      );
     });
 
     it('should reject paths with tilde', async () => {
@@ -30,22 +32,20 @@ describe('ProjectService - Path Security', () => {
   describe('createProject', () => {
     it('should sanitize project names with path traversal', async () => {
       const maliciousName = '../../../etc/passwd';
-      await expect(
-        projectService.createProject({ name: maliciousName })
-      ).rejects.toThrow('parent directory');
+      await expect(projectService.createProject({ name: maliciousName })).rejects.toThrow(
+        'parent directory'
+      );
     });
 
     it('should reject names with invalid characters', async () => {
       const invalidName = 'project<>&|';
-      await expect(
-        projectService.createProject({ name: invalidName })
-      ).rejects.toThrow('invalid characters');
+      await expect(projectService.createProject({ name: invalidName })).rejects.toThrow(
+        'invalid characters'
+      );
     });
 
     it('should reject empty project names', async () => {
-      await expect(
-        projectService.createProject({ name: '' })
-      ).rejects.toThrow('cannot be empty');
+      await expect(projectService.createProject({ name: '' })).rejects.toThrow('cannot be empty');
     });
   });
 });

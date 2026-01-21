@@ -20,14 +20,8 @@ import { ThumbnailGenerator } from '@/lib/thumbnailGenerator';
 import { SlideCard } from './SlideCard';
 
 export const SlideSidebar: React.FC = () => {
-  const {
-    slides,
-    currentSlideId,
-    addSlide,
-    deleteSlide,
-    switchSlide,
-    reorderSlides
-  } = usePPTStore();
+  const { slides, currentSlideId, addSlide, deleteSlide, switchSlide, reorderSlides } =
+    usePPTStore();
 
   // 设置拖拽传感器
   const sensors = useSensors(
@@ -46,12 +40,12 @@ export const SlideSidebar: React.FC = () => {
     generatingRef.current.add(slideId);
 
     try {
-      const slide = slides.find(s => s.id === slideId);
+      const slide = slides.find((s) => s.id === slideId);
       if (!slide) return;
 
       const dataUrl = await ThumbnailGenerator.generateThumbnail(slide.data);
 
-      setThumbnails(prev => new Map(prev).set(slideId, dataUrl));
+      setThumbnails((prev) => new Map(prev).set(slideId, dataUrl));
     } catch (error) {
       console.error('Failed to generate thumbnail:', error);
     } finally {
@@ -70,8 +64,8 @@ export const SlideSidebar: React.FC = () => {
 
   // 清理无效的缩略图
   useEffect(() => {
-    const validIds = new Set(slides.map(s => s.id));
-    setThumbnails(prev => {
+    const validIds = new Set(slides.map((s) => s.id));
+    setThumbnails((prev) => {
       const cleaned = new Map<string, string>();
       prev.forEach((value, key) => {
         if (validIds.has(key)) {
@@ -87,23 +81,19 @@ export const SlideSidebar: React.FC = () => {
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      const oldIndex = slides.findIndex(s => s.id === active.id);
-      const newIndex = slides.findIndex(s => s.id === over?.id);
+      const oldIndex = slides.findIndex((s) => s.id === active.id);
+      const newIndex = slides.findIndex((s) => s.id === over?.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const newSlides = arrayMove(slides, oldIndex, newIndex);
-        reorderSlides(newSlides.map(s => s.id));
+        reorderSlides(newSlides.map((s) => s.id));
       }
     }
   };
 
   return (
     <div className="w-64 bg-slate-100 border-r border-slate-200 flex flex-col">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="flex flex-col h-full">
           {/* 头部 */}
           <div className="p-4 border-b border-slate-200">
@@ -123,11 +113,12 @@ export const SlideSidebar: React.FC = () => {
           {/* 幻灯片列表 */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {slides.length === 0 ? (
-              <div className="text-center text-sm text-slate-400 py-8">
-                点击 + 添加幻灯片
-              </div>
+              <div className="text-center text-sm text-slate-400 py-8">点击 + 添加幻灯片</div>
             ) : (
-              <SortableContext items={slides.map(s => s.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext
+                items={slides.map((s) => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 {slides.map((slide) => (
                   <SlideCard
                     key={slide.id}

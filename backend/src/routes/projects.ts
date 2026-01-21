@@ -61,8 +61,8 @@ router.post('/create', async (req, res) => {
       success: true,
       data: {
         ...projectMeta,
-        path: projectPath
-      }
+        path: projectPath,
+      },
     });
   } catch (error) {
     const message = (error as Error).message;
@@ -83,7 +83,7 @@ router.get('/list', async (req, res) => {
 
     res.json({
       success: true,
-      data: projects
+      data: projects,
     });
   } catch (error) {
     const message = (error as Error).message;
@@ -128,13 +128,13 @@ router.get('/open', async (req, res) => {
           try {
             const [pageData, slideMeta] = await Promise.all([
               fs.readFile(pageDataPath, 'utf-8').then(JSON.parse),
-              fs.readFile(metaPath, 'utf-8').then(JSON.parse)
+              fs.readFile(metaPath, 'utf-8').then(JSON.parse),
             ]);
 
             slides.push({
               id: entry.name,
               data: pageData,
-              meta: slideMeta
+              meta: slideMeta,
             });
           } catch (error) {
             logger.warn(`Failed to read slide ${entry.name}`, { error });
@@ -147,15 +147,15 @@ router.get('/open', async (req, res) => {
 
     // 按 slideOrder 排序
     const orderedSlides = projectMeta.slideOrder
-      .map(id => slides.find(s => s.id === id))
+      .map((id) => slides.find((s) => s.id === id))
       .filter(Boolean);
 
     res.json({
       success: true,
       data: {
         meta: projectMeta,
-        slides: orderedSlides
-      }
+        slides: orderedSlides,
+      },
     });
   } catch (error) {
     const message = (error as Error).message;
@@ -180,7 +180,7 @@ router.get('/workspace', (req, res) => {
 
     res.json({
       success: true,
-      data: { path: workspacePath }
+      data: { path: workspacePath },
     });
   } catch (error) {
     const message = (error as Error).message;
@@ -207,7 +207,7 @@ router.put('/workspace', async (req, res) => {
 
     res.json({
       success: true,
-      data: { path: newPath }
+      data: { path: newPath },
     });
   } catch (error) {
     const message = (error as Error).message;
@@ -253,7 +253,7 @@ router.post('/save', async (req, res) => {
     // 更新项目元数据
     await projectService.updateProject(normalizedPath, {
       title,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     // 保存所有幻灯片
@@ -269,10 +269,17 @@ router.post('/save', async (req, res) => {
       await fs.writeFile(pageDataPath, JSON.stringify(slide.data, null, 2));
 
       // 保存元数据
-      await fs.writeFile(metaPath, JSON.stringify({
-        ...slide.meta,
-        updatedAt: new Date().toISOString()
-      }, null, 2));
+      await fs.writeFile(
+        metaPath,
+        JSON.stringify(
+          {
+            ...slide.meta,
+            updatedAt: new Date().toISOString(),
+          },
+          null,
+          2
+        )
+      );
 
       slideIds.push(slide.id);
     }
@@ -280,7 +287,7 @@ router.post('/save', async (req, res) => {
     // 更新项目中的幻灯片顺序
     const updatedMeta = await projectService.updateProject(normalizedPath, {
       slideOrder: slideIds,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     res.json({
@@ -288,8 +295,8 @@ router.post('/save', async (req, res) => {
       data: {
         message: 'Project saved successfully',
         meta: updatedMeta,
-        slideCount: slides.length
-      }
+        slideCount: slides.length,
+      },
     });
   } catch (error) {
     const message = (error as Error).message;

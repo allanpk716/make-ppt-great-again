@@ -41,10 +41,9 @@ describe('SessionManager', () => {
 
       await SessionManager.initialize();
 
-      expect(fsMock.mkdir).toHaveBeenCalledWith(
-        expect.stringContaining('projects'),
-        { recursive: true }
-      );
+      expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('projects'), {
+        recursive: true,
+      });
     });
 
     it('should start cleanup timer on initialization', async () => {
@@ -83,11 +82,11 @@ describe('SessionManager', () => {
     it('should update activity for multiple sessions', () => {
       const slideIds = ['slide-1', 'slide-2', 'slide-3'];
 
-      slideIds.forEach(id => SessionManager.updateActivity(id));
+      slideIds.forEach((id) => SessionManager.updateActivity(id));
 
       const tracker = SessionManager['activityTracker'];
       expect(tracker.size).toBe(3);
-      slideIds.forEach(id => {
+      slideIds.forEach((id) => {
         expect(tracker.has(id)).toBe(true);
       });
     });
@@ -297,7 +296,7 @@ describe('SessionManager', () => {
   describe('closeAllSessions', () => {
     it('should close all active sessions', () => {
       // Create multiple sessions
-      const sessions = ['slide-1', 'slide-2', 'slide-3'].map(slideId => {
+      const sessions = ['slide-1', 'slide-2', 'slide-3'].map((slideId) => {
         const mockProcess = {
           kill: jest.fn(),
         };
@@ -323,7 +322,7 @@ describe('SessionManager', () => {
       expect(SessionManager['activityTracker'].size).toBe(0);
 
       // Verify cleanup was called for each
-      sessions.forEach(session => {
+      sessions.forEach((session) => {
         expect(session.process.kill).toHaveBeenCalled();
         session.clients.forEach((ws: any) => {
           expect(ws.close).toHaveBeenCalled();

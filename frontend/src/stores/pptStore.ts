@@ -65,7 +65,7 @@ export const usePPTStore = create<PPTStore>()(
           currentProjectPath: null,
           isDirty: false,
           lastSavedAt: null,
-          isSaving: false
+          isSaving: false,
         });
       },
 
@@ -78,7 +78,7 @@ export const usePPTStore = create<PPTStore>()(
           isNewProject: false,
           currentProjectPath: projectPath || null,
           isDirty: false,
-          lastSavedAt: new Date().toISOString()
+          lastSavedAt: new Date().toISOString(),
         });
       },
 
@@ -92,18 +92,18 @@ export const usePPTStore = create<PPTStore>()(
             version: '1.0',
             pageSize: { width: 1280, height: 720 },
             background: '#ffffff',
-            elements: []
+            elements: [],
           },
           meta: {
             summary: '空白页',
             displayIndex: get().slides.length,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
+            updatedAt: new Date().toISOString(),
+          },
         };
         set((state) => ({
           slides: [...state.slides, newSlide],
-          currentSlideId: newId
+          currentSlideId: newId,
         }));
         get().markDirty();
       },
@@ -111,12 +111,11 @@ export const usePPTStore = create<PPTStore>()(
       // 删除幻灯片
       deleteSlide: (id) => {
         set((state) => {
-          const newSlides = state.slides.filter(s => s.id !== id);
+          const newSlides = state.slides.filter((s) => s.id !== id);
           return {
             slides: newSlides,
-            currentSlideId: state.currentSlideId === id
-              ? newSlides[0]?.id || null
-              : state.currentSlideId
+            currentSlideId:
+              state.currentSlideId === id ? newSlides[0]?.id || null : state.currentSlideId,
           };
         });
         get().markDirty();
@@ -130,14 +129,16 @@ export const usePPTStore = create<PPTStore>()(
       // 重新排序
       reorderSlides: (slideIds) => {
         set((state) => {
-          const slideMap = new Map(state.slides.map(s => [s.id, s]));
-          const newSlides = slideIds.map((id, idx) => {
-            const slide = slideMap.get(id);
-            if (slide) {
-              return { ...slide, displayIndex: idx };
-            }
-            return slide;
-          }).filter(Boolean) as Slide[];
+          const slideMap = new Map(state.slides.map((s) => [s.id, s]));
+          const newSlides = slideIds
+            .map((id, idx) => {
+              const slide = slideMap.get(id);
+              if (slide) {
+                return { ...slide, displayIndex: idx };
+              }
+              return slide;
+            })
+            .filter(Boolean) as Slide[];
           return { slides: newSlides };
         });
         get().markDirty();
@@ -146,11 +147,11 @@ export const usePPTStore = create<PPTStore>()(
       // 更新幻灯片数据
       updateSlideData: (id, data) => {
         set((state) => ({
-          slides: state.slides.map(s =>
+          slides: state.slides.map((s) =>
             s.id === id
               ? { ...s, data, meta: { ...s.meta, updatedAt: new Date().toISOString() } }
               : s
-          )
+          ),
         }));
         get().markDirty();
       },
@@ -164,8 +165,8 @@ export const usePPTStore = create<PPTStore>()(
       getSelectedElement: () => {
         const { slides, currentSlideId, selectedElementId } = get();
         if (!currentSlideId || !selectedElementId) return null;
-        const slide = slides.find(s => s.id === currentSlideId);
-        return slide?.data.elements.find(e => e.id === selectedElementId) || null;
+        const slide = slides.find((s) => s.id === currentSlideId);
+        return slide?.data.elements.find((e) => e.id === selectedElementId) || null;
       },
 
       // 获取当前 AI 上下文
@@ -173,7 +174,7 @@ export const usePPTStore = create<PPTStore>()(
         const { selectedElementId } = get();
         return {
           type: selectedElementId ? 'element' : 'page',
-          elementId: selectedElementId || undefined
+          elementId: selectedElementId || undefined,
         };
       },
 
@@ -196,13 +197,13 @@ export const usePPTStore = create<PPTStore>()(
           const response = await fetch('/api/projects/save', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               path: currentProjectPath,
               title: projectTitle,
-              slides
-            })
+              slides,
+            }),
           });
 
           if (!response.ok) {
@@ -219,7 +220,7 @@ export const usePPTStore = create<PPTStore>()(
           set({
             isDirty: false,
             isSaving: false,
-            lastSavedAt: new Date().toISOString()
+            lastSavedAt: new Date().toISOString(),
           });
         } catch (error) {
           set({ isSaving: false });
@@ -245,13 +246,13 @@ export const usePPTStore = create<PPTStore>()(
           const response = await fetch('/api/projects/save', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               path,
               title: projectTitle,
-              slides
-            })
+              slides,
+            }),
           });
 
           if (!response.ok) {
@@ -269,7 +270,7 @@ export const usePPTStore = create<PPTStore>()(
             currentProjectPath: path,
             isDirty: false,
             isSaving: false,
-            lastSavedAt: new Date().toISOString()
+            lastSavedAt: new Date().toISOString(),
           });
         } catch (error) {
           set({ isSaving: false });
@@ -285,7 +286,7 @@ export const usePPTStore = create<PPTStore>()(
       // 标记为干净
       markClean: () => {
         set({ isDirty: false });
-      }
+      },
     }),
     {
       name: 'ppt-storage',
@@ -294,8 +295,8 @@ export const usePPTStore = create<PPTStore>()(
         slides: state.slides,
         currentSlideId: state.currentSlideId,
         projectTitle: state.projectTitle,
-        currentProjectPath: state.currentProjectPath
-      })
+        currentProjectPath: state.currentProjectPath,
+      }),
     }
   )
 );

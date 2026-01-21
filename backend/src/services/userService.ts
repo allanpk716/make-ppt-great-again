@@ -60,4 +60,6 @@ export class UserService {
 }
 
 // 初始化默认测试用户
-UserService.createUser('test-user', 'test-password').catch(error => logger.error('Failed to create default test user', { error }));
+UserService.createUser('test-user', 'test-password').catch((error) =>
+  logger.error('Failed to create default test user', { error })
+);

@@ -7,11 +7,7 @@ interface NewProjectDialogProps {
   onCreate: (name: string) => void;
 }
 
-export const NewProjectDialog: React.FC<NewProjectDialogProps> = ({
-  open,
-  onClose,
-  onCreate
-}) => {
+export const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ open, onClose, onCreate }) => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
@@ -35,9 +31,7 @@ export const NewProjectDialog: React.FC<NewProjectDialogProps> = ({
         <h2 className="text-xl font-semibold text-slate-900 mb-4">新建项目</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              项目名称
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">项目名称</label>
             <input
               type="text"
               value={name}

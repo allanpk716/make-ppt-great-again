@@ -25,11 +25,13 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
     const ws = new WebSocketClient('ws://localhost:3001/ws');
     wsRef.current = ws;
 
-    ws.connect().then(() => {
-      setIsConnected(true);
-    }).catch((error) => {
-      console.error('Failed to connect WebSocket:', error);
-    });
+    ws.connect()
+      .then(() => {
+        setIsConnected(true);
+      })
+      .catch((error) => {
+        console.error('Failed to connect WebSocket:', error);
+      });
 
     ws.onMessage((data) => {
       console.log('CopilotPanel onMessage:', data.type, data);
@@ -38,23 +40,26 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
         console.log('Parsed message:', msg);
         // 只添加非 null 的消息（过滤掉 system 事件）
         if (msg) {
-          setMessages(prev => [...prev, msg]);
+          setMessages((prev) => [...prev, msg]);
         }
       } else if (data.type === 'raw' && data.text) {
         const msg = StreamJsonParser.parseRaw(data.text);
         // 只添加非 null 的消息（过滤掉 system 事件）
         if (msg) {
-          setMessages(prev => [...prev, msg]);
+          setMessages((prev) => [...prev, msg]);
         }
       } else if (data.type === 'done') {
         setIsProcessing(false);
       } else if (data.type === 'error') {
-        setMessages(prev => [...prev, {
-          id: Math.random().toString(36).substring(7),
-          type: 'error',
-          content: data.error || '未知错误',
-          timestamp: new Date()
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(7),
+            type: 'error',
+            content: data.error || '未知错误',
+            timestamp: new Date(),
+          },
+        ]);
         setIsProcessing(false);
       }
     });
@@ -76,19 +81,22 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
     if (!content.trim() || !currentSlideId || !wsRef.current || isProcessing) return;
 
     // 添加用户消息
-    setMessages(prev => [...prev, {
-      id: Math.random().toString(36).substring(7),
-      type: 'user',
-      content: content,
-      timestamp: new Date()
-    }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(7),
+        type: 'user',
+        content: content,
+        timestamp: new Date(),
+      },
+    ]);
 
     // 发送到后端
     wsRef.current.send({
       type: 'chat',
       projectId: 'default',
       slideId: currentSlideId,
-      message: content
+      message: content,
     });
 
     setIsProcessing(true);
@@ -121,7 +129,9 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
           {context.type === 'page' ? '整页 (Page)' : `元素 (${context.elementId})`}
         </div>
         <div className="flex items-center mt-2">
-          <div className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <div
+            className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+          />
           <span className="text-xs text-slate-500">{isConnected ? '已连接' : '未连接'}</span>
         </div>
       </div>
@@ -129,9 +139,7 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <div className="text-sm text-slate-400 text-center py-8">
-            与 AI 对话生成或修改幻灯片
-          </div>
+          <div className="text-sm text-slate-400 text-center py-8">与 AI 对话生成或修改幻灯片</div>
         ) : (
           <AssistantUIAdapter
             messages={messages}

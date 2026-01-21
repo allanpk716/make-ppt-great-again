@@ -8,7 +8,7 @@ import { useZoom } from '@/contexts/ZoomContext';
 // 内部组件，使用 useZoom hook
 const WorkspaceContent: React.FC = () => {
   const { currentSlideId, slides } = usePPTStore();
-  const currentSlide = slides.find(s => s.id === currentSlideId);
+  const currentSlide = slides.find((s) => s.id === currentSlideId);
   const { level, registerContainer, calculateFitToPage, isAutoFit, setZoom } = useZoom();
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,8 +42,7 @@ const WorkspaceContent: React.FC = () => {
         const lastHeight = lastSizeRef.current.height;
 
         // 只有尺寸变化较大时才重新计算（避免频繁触发）
-        const sizeChanged = Math.abs(width - lastWidth) > 50 ||
-                            Math.abs(height - lastHeight) > 50;
+        const sizeChanged = Math.abs(width - lastWidth) > 50 || Math.abs(height - lastHeight) > 50;
         const isFirst = lastWidth === 0 && lastHeight === 0;
 
         if (sizeChanged || isFirst) {
