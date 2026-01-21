@@ -7,6 +7,7 @@ import slidesRouter from './routes/slides.js';
 import { SessionManager } from './services/sessionManager.js';
 import { setupWebSocket } from './middleware/wsHandler.js';
 import { projectService } from './services/projectService.js';
+import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
 const server = createServer(app);
@@ -15,10 +16,14 @@ const server = createServer(app);
 app.use(cors());
 app.use(express.json());
 
-// 路由
-app.use('/api/project', projectRouter);
-app.use('/api/projects', projectsRouter);
-app.use('/api', slidesRouter);
+// 公开路由 (无需认证)
+// TODO: Task 1.2 - 添加 auth 路由
+// app.use('/api/auth', authRouter);
+
+// 受保护路由 (需要认证)
+app.use('/api/project', authenticateToken, projectRouter);
+app.use('/api/projects', authenticateToken, projectsRouter);
+app.use('/api', authenticateToken, slidesRouter);
 
 // WebSocket
 setupWebSocket(server);
