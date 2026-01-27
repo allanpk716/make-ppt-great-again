@@ -16,3 +16,4 @@ docs/test-results/
 
 # Logs
 backend/logs/
+tmp/
