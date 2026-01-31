@@ -138,7 +138,7 @@ export function useWebSocketChat(options: UseWebSocketChatOptions): UseWebSocket
     setBlocks((prev) =>
       prev.map((block) =>
         block.kind === 'permission-request' && block.requestId === requestId
-          ? { ...block, state: 'approved' }
+          ? { ...block, state: 'approved' as const }
           : block
       )
     )
@@ -165,7 +165,7 @@ export function useWebSocketChat(options: UseWebSocketChatOptions): UseWebSocket
     setBlocks((prev) =>
       prev.map((block) =>
         block.kind === 'permission-request' && block.requestId === requestId
-          ? { ...block, state: 'denied' }
+          ? { ...block, state: 'denied' as const }
           : block
       )
     )
@@ -271,7 +271,15 @@ export function useWebSocketChat(options: UseWebSocketChatOptions): UseWebSocket
   const handleMessage = useCallback((message: WebSocketMessage) => {
     switch (message.type) {
       case 'chat.block':
-        setBlocks((prev) => [...prev, message.block])
+        setBlocks((prev) => {
+          // 对于权限请求块，注入回调函数
+          if (message.block.kind === 'permission-request') {
+            const block = message.block as any
+            block._onApprove = () => approvePermission(block.requestId)
+            block._onDeny = () => denyPermission(block.requestId)
+          }
+          return [...prev, message.block]
+        })
         break
 
       case 'chat.block.update':
@@ -293,7 +301,7 @@ export function useWebSocketChat(options: UseWebSocketChatOptions): UseWebSocket
         onError?.(message.error)
         break
     }
-  }, [onError])
+  }, [onError, approvePermission, denyPermission])
 
   /**
    * 组件挂载时连接

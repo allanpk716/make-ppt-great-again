@@ -3,6 +3,7 @@
  *
  * 基于 ChatBlock 架构的 WebSocket 消息处理
  * 集成 SessionManager 进行 Claude CLI 调用
+ * 支持权限审批交互
  */
 
 import { WebSocket } from 'ws'
@@ -28,6 +29,9 @@ interface ChatSession {
   clients: Set<WebSocket>
   createdAt: Date
   lastActivity: Date
+  // 权限请求管理
+  pendingPermissions: Map<string, { tool: string; arguments: Record<string, unknown> }>
+  permissionCallbacks: Map<string, (approved: boolean) => void>
 }
 
 /**
@@ -199,7 +203,9 @@ export class WebSocketChatHandler {
    */
   private async processCLIMessage(session: ChatSession, text: string): Promise<void> {
     const cliSession = await SessionManager.getOrCreateSession(session.projectId, session.slideId)
-    const buffer = ''
+
+    // 创建权限请求拦截器
+    let permissionResolve: ((approved: boolean, result?: unknown) => void) | null = null
 
     // 创建 stdout 数据处理器
     const stdoutHandler = (chunk: Buffer) => {
@@ -208,6 +214,14 @@ export class WebSocketChatHandler {
         if (!line.trim()) continue
         try {
           const event = JSON.parse(line) as ClaudeStreamEvent
+
+          // 检测权限请求
+          if (event.type === 'error' && event.message && event.message.includes('permission')) {
+            // 创建权限请求块
+            this.createPermissionRequest(session, event.message)
+            return
+          }
+
           this.processStreamEventSync(session, event)
         } catch {
           // 非 JSON 行，作为文本事件处理
@@ -245,6 +259,150 @@ export class WebSocketChatHandler {
         reject(error)
       })
     })
+  }
+
+  /**
+   * 创建权限请求
+   */
+  private createPermissionRequest(session: ChatSession, message: string): void {
+    const requestId = `perm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // 解析权限请求消息
+    // 格式类似: "Tool use: edit_file requires permission. Tool input: ..."
+    const toolMatch = message.match(/Tool use:\s+(\w+)/)
+    const toolName = toolMatch ? toolMatch[1] : 'unknown'
+
+    // 保存权限请求
+    session.pendingPermissions.set(requestId, {
+      tool: toolName,
+      arguments: { message }
+    })
+
+    // 创建权限请求块
+    const permissionBlock: ChatBlock = {
+      id: `perm-${requestId}`,
+      kind: 'permission-request',
+      createdAt: Date.now(),
+      requestId,
+      tool: toolName,
+      arguments: { message },
+      state: 'pending',
+      // 注入回调函数
+      _onApprove: () => this.handlePermissionApprove(session, requestId),
+      _onDeny: () => this.handlePermissionDeny(session, requestId)
+    }
+
+    // 发送权限请求到客户端
+    this.broadcastToSession(session, {
+      type: 'chat.block',
+      block: permissionBlock
+    })
+
+    logger.info(`[ChatHandler] Permission request created: ${requestId}, tool: ${toolName}`)
+  }
+
+  /**
+   * 处理权限审批
+   */
+  private async handlePermissionApprove(session: ChatSession, requestId: string): Promise<void> {
+    logger.info(`[ChatHandler] Permission approved: ${requestId}`)
+
+    // 更新权限请求状态
+    session.pendingPermissions.delete(requestId)
+
+    // 广播状态更新
+    this.broadcastToSession(session, {
+      type: 'chat.block.update',
+      blockId: `perm-${requestId}`,
+      updates: { state: 'approved' }
+    })
+
+    // 发送批准响应到 CLI
+    const cliSession = await SessionManager.getOrCreateSession(session.projectId, session.slideId)
+    if (cliSession.process.stdin) {
+      const response = JSON.stringify({
+        type: 'permission_response',
+        approved: true,
+        requestId
+      })
+      cliSession.process.stdin.write(response + '\n')
+    }
+
+    // 通知回调
+    const callback = session.permissionCallbacks.get(requestId)
+    if (callback) {
+      callback(true)
+      session.permissionCallbacks.delete(requestId)
+    }
+  }
+
+  /**
+   * 处理权限拒绝
+   */
+  private async handlePermissionDeny(session: ChatSession, requestId: string): Promise<void> {
+    logger.info(`[ChatHandler] Permission denied: ${requestId}`)
+
+    // 更新权限请求状态
+    session.pendingPermissions.delete(requestId)
+
+    // 广播状态更新
+    this.broadcastToSession(session, {
+      type: 'chat.block.update',
+      blockId: `perm-${requestId}`,
+      updates: { state: 'denied' }
+    })
+
+    // 发送拒绝响应到 CLI
+    const cliSession = await SessionManager.getOrCreateSession(session.projectId, session.slideId)
+    if (cliSession.process.stdin) {
+      const response = JSON.stringify({
+        type: 'permission_response',
+        approved: false,
+        requestId
+      })
+      cliSession.process.stdin.write(response + '\n')
+    }
+
+    // 通知回调
+    const callback = session.permissionCallbacks.get(requestId)
+    if (callback) {
+      callback(false)
+      session.permissionCallbacks.delete(requestId)
+    }
+  }
+
+  /**
+   * 处理中止
+   */
+  private async handleAbort(session: ChatSession): Promise<void> {
+    logger.info('[ChatHandler] Abort requested')
+
+    // 清理状态
+    session.orchestrator.clear()
+
+    // 终止 CLI 进程
+    const cliSession = await SessionManager.getOrCreateSession(session.projectId, session.slideId)
+    if (cliSession.process.exitCode === null) {
+      cliSession.process.kill('SIGTERM')
+    }
+
+    // 发送中止状态
+    this.broadcastToSession(session, {
+      type: 'chat.session.state',
+      state: {
+        sessionId: session.sessionId,
+        thinking: false,
+        controlledByUser: true,
+        activeTools: []
+      }
+    })
+
+    // 清理待处理的权限请求
+    for (const [requestId, callback] of session.permissionCallbacks) {
+      callback(false)
+    }
+    session.permissionCallbacks.clear()
+    session.pendingPermissions.clear()
   }
 
   /**
@@ -293,31 +451,6 @@ export class WebSocketChatHandler {
   }
 
   /**
-   * 处理权限审批
-   */
-  private async handlePermissionApprove(session: ChatSession, requestId: string) {
-    // TODO: 实现权限审批逻辑
-    logger.info(`[ChatHandler] Permission approved: ${requestId}`)
-  }
-
-  /**
-   * 处理权限拒绝
-   */
-  private async handlePermissionDeny(session: ChatSession, requestId: string) {
-    // TODO: 实现权限拒绝逻辑
-    logger.info(`[ChatHandler] Permission denied: ${requestId}`)
-  }
-
-  /**
-   * 处理中止
-   */
-  private async handleAbort(session: ChatSession) {
-    // TODO: 实现 Claude CLI 中止
-    logger.info('[ChatHandler] Abort requested')
-    session.orchestrator.clear()
-  }
-
-  /**
    * 广播消息到会话的所有客户端
    */
   private broadcastToSession(session: ChatSession, message: WebSocketMessage) {
@@ -349,7 +482,9 @@ export class WebSocketChatHandler {
       slideId,
       clients: new Set(),
       createdAt: new Date(),
-      lastActivity: new Date()
+      lastActivity: new Date(),
+      pendingPermissions: new Map(),
+      permissionCallbacks: new Map()
     }
   }
 

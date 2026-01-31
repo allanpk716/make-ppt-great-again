@@ -124,11 +124,11 @@ export function useChatRuntime(options: UseChatRuntimeOptions) {
           id: block.id,
           createdAt: new Date(block.createdAt),
           content: [{
-            type: 'tool-use',
+            type: 'tool-call',
             toolCallId: block.id,
             toolName: block.tool.name,
-            argsText: JSON.stringify(block.tool.input, null, 2),
-            result: block.tool.result,
+            args: JSON.stringify(block.tool.input),
+            result: block.tool.result ? JSON.stringify(block.tool.result) : undefined,
             isError: block.tool.state === 'error'
           }],
           metadata: {

@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { MessageSquare, Send, Square, Mic, Paperclip } from 'lucide-react'
-import { AssistantRuntimeProvider, ThreadRoot, ThreadViewport, ThreadMessages } from '@assistant-ui/react'
+import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { usePPTStore } from '@/stores/pptStore'
 import { useWebSocketChat } from '@/hooks/useWebSocketChat'
 import { useChatRuntime } from '@/hooks/useChatRuntime'
@@ -18,7 +18,9 @@ export interface CopilotPanelProps {
 }
 
 export function CopilotPanel({ style }: CopilotPanelProps) {
-  const { currentSlideId, currentProjectId, getCurrentAIContext } = usePPTStore()
+  const { currentSlideId, getCurrentAIContext } = usePPTStore()
+  // 从 slideId 提取项目ID，或使用默认值
+  const projectId = 'default'
   const context = getCurrentAIContext()
 
   // WebSocket 聊天状态
@@ -29,7 +31,7 @@ export function CopilotPanel({ style }: CopilotPanelProps) {
     sendMessage,
     abortGeneration
   } = useWebSocketChat({
-    projectId: currentProjectId || 'default',
+    projectId,
     slideId: currentSlideId || '',
     onConnectionChange: (connected) => {
       console.log('[CopilotPanel] Connection changed:', connected)
@@ -85,8 +87,7 @@ export function CopilotPanel({ style }: CopilotPanelProps) {
       {/* 聊天线程 */}
       <div className="min-h-0 flex-1 overflow-hidden">
         <AssistantRuntimeProvider runtime={runtime}>
-          <ThreadRoot className="h-full">
-            <ThreadViewport className="h-full">
+          <div className="h-full overflow-y-auto">
               <div className="mx-auto max-w-3xl p-4">
                 {/* 空状态 */}
                 {blocks.length === 0 && (
@@ -102,8 +103,7 @@ export function CopilotPanel({ style }: CopilotPanelProps) {
                   ))}
                 </div>
               </div>
-            </ThreadViewport>
-          </ThreadRoot>
+          </div>
         </AssistantRuntimeProvider>
       </div>
 

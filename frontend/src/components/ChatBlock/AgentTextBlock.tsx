@@ -2,8 +2,6 @@
  * AI 文本响应块组件
  */
 
-import { ReactMarkdown } from '@assistant-ui/react-markdown'
-import remarkGfm from 'remark-gfm'
 import type { AgentTextBlock } from '@/types/chat'
 
 export interface AgentTextBlockProps {
@@ -21,29 +19,9 @@ export function AgentTextBlock({ block }: AgentTextBlockProps) {
             <code>{block.text}</code>
           </pre>
         ) : (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              // 自定义组件样式
-              p: ({ children }) => <p className="whitespace-pre-wrap">{children}</p>,
-              code: ({ inline, className, children }) => {
-                if (inline) {
-                  return (
-                    <code className="rounded bg-slate-200 px-1 py-0.5 text-sm dark:bg-slate-700">
-                      {children}
-                    </code>
-                  )
-                }
-                return (
-                  <code className={className}>
-                    {children}
-                  </code>
-                )
-              }
-            }}
-          >
+          <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
             {block.text}
-          </ReactMarkdown>
+          </div>
         )}
 
         {/* 时间戳 */}
