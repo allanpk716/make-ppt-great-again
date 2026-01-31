@@ -2,11 +2,12 @@
  * WebSocket 聊天处理器
  *
  * 基于 ChatBlock 架构的 WebSocket 消息处理
- * 集成 MessageOrchestrator 进行流式响应编排
+ * 集成 SessionManager 进行 Claude CLI 调用
  */
 
 import { WebSocket } from 'ws'
 import { MessageOrchestrator } from '../services/messageOrchestrator.js'
+import { SessionManager } from '../services/sessionManager.js'
 import { logger } from '../lib/logger.js'
 import type {
   ChatBlock,
@@ -92,8 +93,6 @@ export class WebSocketChatHandler {
     ws.on('close', () => {
       session.clients.delete(ws)
       logger.info(`[ChatHandler] Client disconnected from session: ${sessionId}, clients: ${session.clients.size}`)
-
-      // 如果没有客户端了，可以考虑清理会话（这里暂时保留）
     })
 
     // 设置错误处理器
@@ -114,7 +113,7 @@ export class WebSocketChatHandler {
 
       switch (message.type) {
         case 'chat.message.send':
-          await this.handleMessageSend(session, message.text)
+          await this.handleMessageSend(session, message.text || '')
           break
 
         case 'chat.permission.approve':
@@ -163,53 +162,134 @@ export class WebSocketChatHandler {
       }
     })
 
-    // 调用 Claude CLI
     try {
-      const cliStream = this.createCLIStream(session)
-      const outputStream = this.processCLIStream(cliStream)
+      // 使用 SessionManager 发送消息并处理流式响应
+      await this.processCLIMessage(session, text)
 
-      for await (const output of outputStream) {
-        if (output.type === 'block') {
-          this.broadcastToSession(session, {
-            type: 'chat.block',
-            block: output.block
-          })
-        } else if (output.type === 'update') {
-          this.broadcastToSession(session, {
-            type: 'chat.block.update',
-            blockId: output.blockId,
-            updates: output.updates
-          })
-        } else if (output.type === 'state') {
-          this.broadcastToSession(session, {
-            type: 'chat.session.state',
-            state: {
-              sessionId: session.sessionId,
-              thinking: output.state.thinking,
-              controlledByUser: true,
-              activeTools: []
-            }
-          })
+      // 发送结束状态
+      this.broadcastToSession(session, {
+        type: 'chat.session.state',
+        state: {
+          sessionId: session.sessionId,
+          thinking: false,
+          controlledByUser: true,
+          activeTools: []
         }
-      }
+      })
     } catch (error) {
       logger.error('[ChatHandler] Error processing message', { error })
       this.broadcastToSession(session, {
         type: 'chat.error',
         error: (error as Error).message
       })
+      this.broadcastToSession(session, {
+        type: 'chat.session.state',
+        state: {
+          sessionId: session.sessionId,
+          thinking: false,
+          controlledByUser: true,
+          activeTools: []
+        }
+      })
+    }
+  }
+
+  /**
+   * 处理 CLI 消息并流式转发
+   */
+  private async processCLIMessage(session: ChatSession, text: string): Promise<void> {
+    const cliSession = await SessionManager.getOrCreateSession(session.projectId, session.slideId)
+    const buffer = ''
+
+    // 创建 stdout 数据处理器
+    const stdoutHandler = (chunk: Buffer) => {
+      const lines = chunk.toString().split('\n')
+      for (const line of lines) {
+        if (!line.trim()) continue
+        try {
+          const event = JSON.parse(line) as ClaudeStreamEvent
+          this.processStreamEventSync(session, event)
+        } catch {
+          // 非 JSON 行，作为文本事件处理
+          if (line.trim()) {
+            this.processStreamEventSync(session, {
+              type: 'text',
+              text: line + '\n'
+            })
+          }
+        }
+      }
     }
 
-    // 发送完成状态
-    this.broadcastToSession(session, {
-      type: 'chat.session.state',
-      state: {
-        sessionId: session.sessionId,
-        thinking: false,
-        controlledByUser: true,
-        activeTools: []
-      }
+    // 临时添加 stdout 监听器
+    cliSession.process.stdout?.on('data', stdoutHandler)
+
+    // 发送消息到 CLI
+    await SessionManager.sendMessage(session.projectId, session.slideId, text)
+
+    // 等待进程完成
+    return new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        cliSession.process.stdout?.off('data', stdoutHandler)
+        resolve()
+      }, 60000) // 60秒超时
+
+      cliSession.process.once('exit', () => {
+        clearTimeout(timeout)
+        cliSession.process.stdout?.off('data', stdoutHandler)
+        resolve()
+      })
+
+      cliSession.process.once('error', (error) => {
+        clearTimeout(timeout)
+        reject(error)
+      })
     })
+  }
+
+  /**
+   * 同步处理流事件
+   */
+  private processStreamEventSync(session: ChatSession, event: ClaudeStreamEvent): void {
+    try {
+      const orchestrator = session.orchestrator as any
+      const handleResult = orchestrator.handleEvent(event)
+
+      // 处理 Generator 结果
+      const gen = handleResult as Generator<unknown>
+      let result = gen.next()
+
+      while (!result.done) {
+        const output = result.value as { type: string; block?: ChatBlock; blockId?: string; updates?: Partial<ChatBlock>; state?: { thinking: boolean } }
+
+        if (output.type === 'block') {
+          this.broadcastToSession(session, {
+            type: 'chat.block',
+            block: output.block!
+          })
+        } else if (output.type === 'update') {
+          this.broadcastToSession(session, {
+            type: 'chat.block.update',
+            blockId: output.blockId!,
+            updates: output.updates!
+          })
+        } else if (output.type === 'state') {
+          this.broadcastToSession(session, {
+            type: 'chat.session.state',
+            state: {
+              sessionId: session.sessionId,
+              thinking: output.state!.thinking,
+              controlledByUser: true,
+              activeTools: []
+            }
+          })
+        }
+
+        result = gen.next()
+      }
+    } catch (error) {
+      logger.error('[ChatHandler] Error processing stream event', { error })
+    }
   }
 
   /**
@@ -235,43 +315,6 @@ export class WebSocketChatHandler {
     // TODO: 实现 Claude CLI 中止
     logger.info('[ChatHandler] Abort requested')
     session.orchestrator.clear()
-  }
-
-  /**
-   * 创建 Claude CLI 流
-   */
-  private async *createCLIStream(session: ChatSession): AsyncGenerator<ClaudeStreamEvent> {
-    // TODO: 集成实际的 Claude CLI
-    // 这里暂时返回模拟数据用于测试
-    yield { type: 'message_start' }
-    yield { type: 'thinking', content: '让我思考一下...' }
-    yield { type: 'text', text: '这是一个测试响应' }
-    yield { type: 'message_stop' }
-  }
-
-  /**
-   * 处理 CLI 流并转换为编排器输出
-   */
-  private async *processCLIStream(
-    stream: AsyncGenerator<ClaudeStreamEvent>
-  ): AsyncGenerator<{
-    type: 'block' | 'update' | 'state'
-    block?: ChatBlock
-    blockId?: string
-    updates?: Partial<ChatBlock>
-    state?: { thinking: boolean }
-  }> {
-    const orchestrator = new MessageOrchestrator()
-
-    for await (const output of orchestrator.processStream(stream)) {
-      if (output.type === 'block') {
-        yield { type: 'block', block: output.block }
-      } else if (output.type === 'update') {
-        yield { type: 'update', blockId: output.blockId, updates: output.updates }
-      } else if (output.type === 'state') {
-        yield { type: 'state', state: output.state }
-      }
-    }
   }
 
   /**

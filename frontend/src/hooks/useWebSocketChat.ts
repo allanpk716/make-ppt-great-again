@@ -14,7 +14,7 @@ import type { ChatBlock, WebSocketMessage, SessionState, UserMessageRequest } fr
 interface UseWebSocketChatOptions {
   /**
    * WebSocket 服务器地址
-   * @default 'ws://localhost:3000/ws'
+   * @default 'ws://localhost:3001/ws'
    */
   url?: string
 
@@ -73,7 +73,7 @@ interface UseWebSocketChatReturn {
  */
 export function useWebSocketChat(options: UseWebSocketChatOptions): UseWebSocketChatReturn {
   const {
-    url = 'ws://localhost:3000/ws',
+    url = 'ws://localhost:3001/ws',
     projectId,
     slideId,
     onConnectionChange,
