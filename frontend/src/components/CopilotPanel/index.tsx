@@ -1,301 +1,202 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { usePPTStore } from '@/stores/pptStore';
-import { MessageSquare, Send } from 'lucide-react';
-import { WebSocketClient } from '@/lib/websocketClient';
-import { StreamJsonParser } from '@/lib/streamJsonParser';
-import { AssistantUIAdapter } from '@/components/AssistantUIAdapter';
-import { DisplayMessage } from '@/types/stream';
-import { AccumulatingMessage, isSameAssistantReply, AccumulatingPart } from '@/types/accumulation';
+/**
+ * CopilotPanel 组件（重构版）
+ *
+ * 基于 ChatBlock 架构的 AI 聊天面板
+ * 使用 assistant-ui 组件库
+ */
 
-interface CopilotPanelProps {
-  style?: React.CSSProperties;
+import { useState } from 'react'
+import { MessageSquare, Send, Square, Mic, Paperclip } from 'lucide-react'
+import { AssistantRuntimeProvider, ThreadRoot, ThreadViewport, ThreadMessages } from '@assistant-ui/react'
+import { usePPTStore } from '@/stores/pptStore'
+import { useWebSocketChat } from '@/hooks/useWebSocketChat'
+import { useChatRuntime } from '@/hooks/useChatRuntime'
+import { ChatBlock } from '@/components/ChatBlock'
+
+export interface CopilotPanelProps {
+  style?: React.CSSProperties
 }
 
-export const CopilotPanel: React.FC<CopilotPanelProps> = ({ style }) => {
-  const { getCurrentAIContext, currentSlideId } = usePPTStore();
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
-  const [accumulatingMsg, setAccumulatingMsg] = useState<AccumulatingMessage | null>(null);
-  const [input, setInput] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const wsRef = useRef<WebSocketClient | null>(null);
+export function CopilotPanel({ style }: CopilotPanelProps) {
+  const { currentSlideId, currentProjectId, getCurrentAIContext } = usePPTStore()
+  const context = getCurrentAIContext()
 
-  const context = getCurrentAIContext();
-
-  // 初始化 WebSocket
-  useEffect(() => {
-    const ws = new WebSocketClient('ws://localhost:3001/ws');
-    wsRef.current = ws;
-
-    ws.connect()
-      .then(() => {
-        setIsConnected(true);
-      })
-      .catch((error) => {
-        console.error('Failed to connect WebSocket:', error);
-      });
-
-    ws.onMessage((data) => {
-      console.log('CopilotPanel onMessage:', data.type, data);
-
-      if (data.type === 'stream' && data.data) {
-        const msg = StreamJsonParser.parse(data.data);
-        console.log('Parsed message:', msg);
-
-        // 只添加非 null 的消息（过滤掉 system 事件）
-        if (!msg) return;
-
-        if (msg.type === 'user') {
-          // 添加用户消息
-          setMessages((prev) => [...prev, msg]);
-
-          // 开始新的 AI 消息累积
-          setAccumulatingMsg({
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            parts: [],
-            status: { type: 'running' },
-            createdAt: new Date(),
-          });
-        }
-        else if (accumulatingMsg && isSameAssistantReply(msg, accumulatingMsg)) {
-          // 累积 AI 消息片段
-          const newPart = convertDisplayMessageToPart(msg);
-
-          // 特殊处理: text 类型追加到现有 text part（使用不可变更新）
-          if (msg.type === 'text') {
-            const existingTextPart = accumulatingMsg.parts.find(p => p.type === 'text');
-            if (existingTextPart && existingTextPart.content) {
-              // 创建新数组和新对象，避免直接修改状态
-              setAccumulatingMsg({
-                ...accumulatingMsg,
-                parts: accumulatingMsg.parts.map(part =>
-                  part.type === 'text'
-                    ? { ...part, content: part.content + (msg.content || '') }
-                    : part
-                ),
-              });
-            } else {
-              // 添加新的 text part
-              setAccumulatingMsg({
-                ...accumulatingMsg,
-                parts: [...accumulatingMsg.parts, newPart],
-              });
-            }
-          } else {
-            // thinking, tool_call, tool_result 作为新 part 添加
-            setAccumulatingMsg({
-              ...accumulatingMsg,
-              parts: [...accumulatingMsg.parts, newPart],
-            });
-          }
-
-          console.log('Accumulated parts:', accumulatingMsg.parts.length);
-        }
-      }
-      else if (data.type === 'done') {
-        // 完成累积：将 accumulatingMsg 转换为 DisplayMessage[] 并添加到列表
-        if (accumulatingMsg) {
-          const displayMsgs = convertAccumulatingToDisplayMessages(accumulatingMsg);
-          setMessages((prev) => [...prev, ...displayMsgs]);
-
-          console.log(`Added ${displayMsgs.length} messages from accumulation`);
-          setAccumulatingMsg(null);
-        }
-        setIsProcessing(false);
-      }
-      else if (data.type === 'error') {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Math.random().toString(36).substring(7),
-            type: 'error',
-            content: data.error || '未知错误',
-            timestamp: new Date(),
-          },
-        ]);
-        setIsProcessing(false);
-        setAccumulatingMsg(null);
-      }
-    });
-
-    return () => {
-      ws.disconnect();
-    };
-  }, []);
-
-  // 当 slideId 改变时注册客户端
-  useEffect(() => {
-    if (currentSlideId && wsRef.current && isConnected) {
-      console.log('Registering for slideId:', currentSlideId);
-      wsRef.current.register('default', currentSlideId);
+  // WebSocket 聊天状态
+  const {
+    blocks,
+    isConnected,
+    isThinking,
+    sendMessage,
+    abortGeneration
+  } = useWebSocketChat({
+    projectId: currentProjectId || 'default',
+    slideId: currentSlideId || '',
+    onConnectionChange: (connected) => {
+      console.log('[CopilotPanel] Connection changed:', connected)
+    },
+    onError: (error) => {
+      console.error('[CopilotPanel] Error:', error)
     }
-  }, [currentSlideId, isConnected]);
+  })
 
-  const sendMessage = (content: string) => {
-    if (!content.trim() || !currentSlideId || !wsRef.current || isProcessing) return;
+  // assistant-ui 运行时
+  const runtime = useChatRuntime({
+    blocks,
+    isRunning: isThinking,
+    onSendMessage: sendMessage,
+    onAbort: async () => abortGeneration()
+  })
 
-    // 设置处理状态
-    setIsProcessing(true);
-
-    // 发送到后端（用户消息将由 ws.onMessage 统一处理）
-    wsRef.current.send({
-      type: 'chat',
-      projectId: 'default',
-      slideId: currentSlideId,
-      message: content,
-    });
-  };
-
-  const handleSend = () => {
-    sendMessage(input);
-    setInput('');
-  };
-
-  // 将 DisplayMessage 转换为 AccumulatingPart
-  function convertDisplayMessageToPart(msg: DisplayMessage): AccumulatingPart {
-    switch (msg.type) {
-      case 'thinking':
-        return {
-          type: 'reasoning',
-          content: msg.content || '',
-        };
-
-      case 'tool_call':
-        return {
-          type: 'tool-use',
-          toolName: msg.toolName || 'unknown',
-          input: msg.toolInput,
-          toolCallId: msg.id,
-        };
-
-      case 'tool_result':
-        return {
-          type: 'tool-result',
-          toolName: msg.toolName || 'unknown',
-          output: msg.toolResult,
-          toolCallId: msg.id,
-        };
-
-      case 'text':
-      default:
-        return {
-          type: 'text',
-          content: msg.content || '',
-        };
-    }
-  }
-
-  // 将 AccumulatingMessage 转换为 DisplayMessage[]
-  function convertAccumulatingToDisplayMessages(accMsg: AccumulatingMessage): DisplayMessage[] {
-    return accMsg.parts.map((part, index) => {
-      const baseMsg = {
-        id: `${accMsg.id}-${part.type}-${index}`,
-        timestamp: accMsg.createdAt,
-      };
-
-      switch (part.type) {
-        case 'reasoning':
-          return {
-            ...baseMsg,
-            type: 'thinking',
-            content: part.content || '',
-          };
-
-        case 'tool-use':
-          return {
-            ...baseMsg,
-            type: 'tool_call',
-            toolName: part.toolName,
-            toolInput: part.input,
-          };
-
-        case 'tool-result':
-          return {
-            ...baseMsg,
-            type: 'tool_result',
-            toolName: part.toolName,
-            toolResult: part.output,
-          };
-
-        case 'text':
-        default:
-          return {
-            ...baseMsg,
-            type: 'text',
-            content: part.content || '',
-          };
-      }
-    });
-  }
-
+  // 未选择幻灯片时的空状态
   if (!currentSlideId) {
     return (
       <div className="bg-slate-50 border-l border-slate-200" style={style}>
         <div className="h-full flex items-center justify-center text-slate-400">
           <div className="text-center">
-            <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <MessageSquare className="mx-auto mb-4 h-12 w-12 opacity-50" />
             <p>选择幻灯片后开始对话</p>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="bg-slate-50 border-l border-slate-200 flex flex-col" style={style}>
-      {/* 上下文指示器 */}
-      <div className="p-4 border-b border-slate-200">
-        <div className="text-sm font-medium text-slate-700">当前上下文</div>
-        <div className="text-xs text-slate-500 mt-1">
-          {context.type === 'page' ? '整页 (Page)' : `元素 (${context.elementId})`}
+    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-900" style={style}>
+      {/* 头部：状态和上下文 */}
+      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-800">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">AI 助手</h2>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {context.type === 'page' ? '整页' : `元素 (${context.elementId})`}
+          </div>
         </div>
-        <div className="flex items-center mt-2">
-          <div
-            className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
-          />
-          <span className="text-xs text-slate-500">{isConnected ? '已连接' : '未连接'}</span>
+        <div className="flex items-center gap-2">
+          {/* 连接状态 */}
+          <div className="flex items-center gap-1.5">
+            <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {isConnected ? '已连接' : '未连接'}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.length === 0 ? (
-          <div className="text-sm text-slate-400 text-center py-8">与 AI 对话生成或修改幻灯片</div>
-        ) : (
-          <AssistantUIAdapter
-            messages={messages}
-            isProcessing={isProcessing}
-            onSendMessage={sendMessage}
-          />
-        )}
+      {/* 聊天线程 */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <AssistantRuntimeProvider runtime={runtime}>
+          <ThreadRoot className="h-full">
+            <ThreadViewport className="h-full">
+              <div className="mx-auto max-w-3xl p-4">
+                {/* 空状态 */}
+                {blocks.length === 0 && (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                    与 AI 对话生成或修改幻灯片
+                  </div>
+                )}
+
+                {/* 消息列表 - 使用 ChatBlock 组件 */}
+                <div className="space-y-4">
+                  {blocks.map((block) => (
+                    <ChatBlock key={block.id} block={block} />
+                  ))}
+                </div>
+              </div>
+            </ThreadViewport>
+          </ThreadRoot>
+        </AssistantRuntimeProvider>
       </div>
 
       {/* 输入区域 */}
-      <div className="p-4 border-t border-slate-200">
-        <div className="flex gap-2">
-          <textarea
-            className="flex-1 p-2 border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={3}
-            placeholder="输入您的需求..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isProcessing}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed self-end"
-          >
-            <Send className="h-4 w-4" />
-          </button>
-        </div>
+      <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+        <ChatInput
+          disabled={!isConnected || !currentSlideId}
+          isThinking={isThinking}
+          onSend={sendMessage}
+          onAbort={abortGeneration}
+        />
       </div>
     </div>
-  );
-};
+  )
+}
+
+/**
+ * 聊天输入组件
+ */
+interface ChatInputProps {
+  disabled: boolean
+  isThinking: boolean
+  onSend: (text: string) => void
+  onAbort: () => void
+}
+
+function ChatInput({ disabled, isThinking, onSend, onAbort }: ChatInputProps) {
+  const [input, setInput] = useState('')
+
+  const handleSend = () => {
+    if (input.trim() && !disabled) {
+      onSend(input)
+      setInput('')
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  return (
+    <div className="flex items-end gap-2">
+      {/* 附件按钮 */}
+      <button
+        disabled={disabled}
+        className="rounded-lg border p-2 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+        title="上传附件"
+      >
+        <Paperclip className="h-5 w-5 text-slate-500" />
+      </button>
+
+      {/* 输入框 */}
+      <textarea
+        disabled={disabled}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="输入您的需求..."
+        rows={2}
+        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+      />
+
+      {/* 语音按钮 */}
+      <button
+        disabled={disabled}
+        className="rounded-lg border p-2 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+        title="语音输入"
+      >
+        <Mic className="h-5 w-5 text-slate-500" />
+      </button>
+
+      {/* 发送/中止按钮 */}
+      {isThinking ? (
+        <button
+          onClick={onAbort}
+          className="rounded-lg bg-red-600 p-2 text-white hover:bg-red-700"
+          title="中止生成"
+        >
+          <Square className="h-5 w-5 fill-current" />
+        </button>
+      ) : (
+        <button
+          onClick={handleSend}
+          disabled={!input.trim() || disabled}
+          className="rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed dark:bg-blue-700 dark:hover:bg-blue-600 dark:disabled:bg-slate-700"
+          title="发送"
+        >
+          <Send className="h-5 w-5" />
+        </button>
+      )}
+    </div>
+  )
+}
