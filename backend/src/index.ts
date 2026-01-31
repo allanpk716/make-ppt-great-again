@@ -36,8 +36,8 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRouter);
 
 // 受保护路由 (需要认证)
-app.use('/api/project', authenticateToken, projectRouter);
-app.use('/api/projects', authenticateToken, projectsRouter);
+app.use('/api/project', projectRouter);
+app.use('/api/projects', projectsRouter);
 app.use('/api', authenticateToken, slidesRouter);
 
 // WebSocket
